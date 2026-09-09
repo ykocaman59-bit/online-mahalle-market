@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mahalle Market - Teslimat</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>Mahalle Market</h1>
+        <button id="google-login-btn">Gmail ile Giriş Yap</button>
+    </div>
+
+    <div class="container">
+        <div class="delivery-badge"> Sabit 50 TL Getirme Ücreti</div>
+
+        <h3>Yakınınızdaki Açık Marketler (3.5 km Yarıçap)</h3>
+        <div id="nearby-stores" class="grid-container"></div>
+    </div>
+
+    <script type="module">
+        import { supabase } from './js/supabase.js';
+
+        // Gmail ile Giriş
+        document.getElementById('google-login-btn').addEventListener('click', async () => {
+            await supabase.auth.signInWithOAuth({ provider: 'google' });
+        });
+
+        // Konum Al ve 3.5 km Yakındaki Marketleri Çek
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            const userLat = position.coords.latitude;
+            const userLng = position.coords.longitude;
+
+            // SQL Konum Fonksiyonunu Çalıştır
+            const { data: stores, error } = await supabase.rpc('get_nearby_open_stores', {
+                user_lat: userLat,
+                user_lng: userLng,
+                max_distance_km: 3.5
+            });
+
+            const container = document.getElementById('nearby-stores');
+            container.innerHTML = '';
+
+            if (stores && stores.length > 0) {
+                stores.forEach(store => {
+                    container.innerHTML += `
+                        <div class="card">
+                            <h4>${store.store_name}</h4>
+                            <p>Mesafe: ${store.distance_km.toFixed(2)} km</p>
+                            <button onclick="openStore('${store.store_id}')">Markete Git</button>
+                        </div>
+                    `;
+                });
+            } else {
+                container.innerHTML = '<p>3.5 km yakınlarınızda açık market bulunamadı.</p>';
+            }
+        });
+    </script>
+</body>
+</html>
