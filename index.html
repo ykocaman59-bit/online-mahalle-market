@@ -139,7 +139,7 @@
     <script type="module">
         import { supabase } from './js/supabase.js';
 
-        // Sekme Değiştirme Fonksiyonu
+        // Sekme Değiştirme
         window.switchTab = (tab) => {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             ['customer-login-form', 'seller-login-form', 'admin-login-form'].forEach(f => document.getElementById(f).classList.add('hidden'));
@@ -154,7 +154,7 @@
             if(window.event && window.event.target) window.event.target.classList.add('active');
         };
 
-        // Müşteri Kayıt İşlemi
+        // Müşteri Kayıt
         document.getElementById('cust-register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('reg-name').value;
@@ -213,37 +213,34 @@
             }
         }
 
-        // Admin: Market Tanımlama ve Veritabanına Kaydetme
+        // Admin: Market Ekleme
         document.getElementById('add-store-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('st-name').value;
-            const email = document.getElementById('st-email').value;
-            const pass = document.getElementById('st-pass').value;
             const lat = parseFloat(document.getElementById('st-lat').value);
             const lng = parseFloat(document.getElementById('st-lng').value);
 
             try {
                 const { data, error } = await supabase.from('stores').insert([{
                     store_name: name,
-                    seller_email: email,
                     latitude: lat,
                     longitude: lng,
                     is_open: true
                 }]);
 
                 if (error) {
-                    alert('Veritabanı Kayıt Hatası: ' + error.message);
+                    alert('Veritabanı Hata Detayı: ' + error.message);
                 } else {
                     alert('Market başarıyla eklendi!');
                     document.getElementById('add-store-form').reset();
                     loadAdminStores();
                 }
             } catch (err) {
-                alert('Ağ/Bağlantı Hatası: ' + err.message);
+                alert('Bağlantı Hatası: ' + err.message);
             }
         });
 
-        // Admin: Kayıtlı Marketleri Listeleme
+        // Admin: Market Listeleme
         async function loadAdminStores() {
             try {
                 const { data: stores, error } = await supabase.from('stores').select('*');
@@ -254,7 +251,7 @@
                     stores.forEach(st => {
                         list.innerHTML += `
                             <li>
-                                <span><b>${st.store_name}</b> (${st.seller_email || 'E-posta tanımlanmadı'})</span>
+                                <span><b>${st.store_name}</b> (Lat: ${st.latitude}, Lng: ${st.longitude})</span>
                                 <button class="btn-danger" onclick="deleteStore('${st.id}')">Sil</button>
                             </li>
                         `;
@@ -267,29 +264,21 @@
             }
         }
 
-        // Admin: Market Silme İşlemi
+        // Admin: Market Silme
         window.deleteStore = async (id) => {
             if (confirm('Bu marketi silmek istediğinizden emin misiniz?')) {
                 try {
                     await supabase.from('stores').delete().eq('id', id);
                     loadAdminStores();
                 } catch (err) {
-                    alert('Silme işleminde hata oluştu: ' + err.message);
+                    alert('Silme hatası: ' + err.message);
                 }
             }
         };
 
-        // Müşteri: Açık Marketleri Listeleme
+        // Müşteri: Açık Marketleri Gösterme
         function loadNearbyStores() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(async (pos) => {
-                    fetchStores();
-                }, () => {
-                    fetchStores(); // Konum kapalıysa da tüm marketleri gösterir
-                });
-            } else {
-                fetchStores();
-            }
+            fetchStores();
         }
 
         async function fetchStores() {
@@ -317,7 +306,7 @@
         // Çıkış Yap
         window.logout = () => showScreen('auth-screen');
 
-        // Ekran Gizleme/Gösterme Fonksiyonu
+        // Ekran Gizleme/Gösterme
         function showScreen(id) {
             ['auth-screen', 'customer-screen', 'seller-screen', 'admin-screen'].forEach(s => {
                 document.getElementById(s).classList.add('hidden');
