@@ -19,16 +19,17 @@ jobs:
         with:
           node-version: 22
 
-      - name: Java JDK 17 Kurulumu
+      - name: Java JDK 21 Kurulumu
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
 
       - name: Web Dosyalarını Hazırla ve Capacitor Kur
         run: |
           mkdir -p www
-          cp -r index.html seller.html admin.html js css www/ 2>/dev/null || cp -r index.html seller.html admin.html js www/
+          cp index.html seller.html admin.html www/ 2>/dev/null || true
+          cp -r js css www/ 2>/dev/null || true
           npm init -y
           npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
           npx cap init "Mahalle Market" "com.mahallemarket.app" --web-dir "www"
@@ -39,7 +40,7 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug --no-daemon
 
       - name: APK Dosyasını Yükle
         uses: actions/upload-artifact@v4
