@@ -3,108 +3,314 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mahalle Market</title>
+    <title>Mahalle Market Platformu</title>
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 15px; background: #f5f5f5; }
-        .card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        input, button, select { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        * { box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { margin: 0; padding: 15px; background: #f4f6f8; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        input, select, button { width: 100%; padding: 12px; margin: 6px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
         button { background: #28a745; color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { background: #218838; }
         .btn-danger { background: #dc3545; }
-        .hidden { display: none; }
-        .badge { background: #e2e3e5; padding: 5px 10px; border-radius: 4px; display: inline-block; font-size: 12px; }
+        .btn-danger:hover { background: #c82333; }
+        .tab-group { display: flex; gap: 5px; margin-bottom: 15px; }
+        .tab-btn { flex: 1; background: #e9ecef; color: #495057; border: 1px solid #ced4da; }
+        .tab-btn.active { background: #007bff; color: white; border-color: #007bff; }
+        .hidden { display: none !important; }
+        .badge { background: #ffc107; color: #000; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        ul { list-style: none; padding: 0; }
+        li { background: #f8f9fa; border: 1px solid #ddd; padding: 10px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        li button { width: auto; padding: 6px 12px; margin: 0; }
     </style>
 </head>
 <body>
 
-    <!-- 1. GİRİŞ EKRANI -->
-    <div id="login-screen" class="card">
-        <h2>Mahalle Market - Giriş Yap</h2>
-        <form id="login-form">
-            <input type="email" id="login-email" placeholder="E-Posta Adresi" required>
-            <input type="password" id="login-password" placeholder="Şifre" required>
-            <button type="submit">Giriş Yap</button>
-        </form>
-        <p style="text-align:center; font-size: 12px; color: #666;">
-            <strong>Yönetici Girişi:</strong> admin@mahallemarket.com / Admin123!
-        </p>
+    <!-- 1. ANA GİRİŞ / KAYIT EKRANI -->
+    <div id="auth-screen" class="card">
+        <h2>Mahalle Market</h2>
+        <div class="tab-group">
+            <button class="tab-btn active" onclick="switchTab('customer-login')">Müşteri</button>
+            <button class="tab-btn" onclick="switchTab('seller-login')">Satıcı / Market</button>
+            <button class="tab-btn" onclick="switchTab('admin-login')">Yönetici</button>
+        </div>
+
+        <!-- Müşteri Girişi & Kayıt -->
+        <div id="customer-login-form">
+            <h3>Müşteri Girişi</h3>
+            <form id="cust-login-form">
+                <input type="email" id="c-email" placeholder="E-Posta" required>
+                <input type="password" id="c-pass" placeholder="Şifre" required>
+                <button type="submit">Giriş Yap</button>
+            </form>
+            <hr>
+            <h4>Hesabınız Yok mu? Kayot Olun</h4>
+            <form id="cust-register-form">
+                <input type="text" id="reg-name" placeholder="Ad Soyad" required>
+                <input type="email" id="reg-email" placeholder="E-Posta" required>
+                <input type="tel" id="reg-phone" placeholder="Telefon No" required>
+                <input type="password" id="reg-pass" placeholder="Şifre Oluştur" required>
+                <button type="submit" style="background:#007bff;">Müşteri Kaydı Oluştur</button>
+            </form>
+        </div>
+
+        <!-- Satıcı Girişi -->
+        <div id="seller-login-form" class="hidden">
+            <h3>Satıcı (Market) Girişi</h3>
+            <form id="sell-login-form">
+                <input type="email" id="s-email" placeholder="Market E-Posta" required>
+                <input type="password" id="s-pass" placeholder="Geçici veya Yeni Şifre" required>
+                <button type="submit">Market Paneline Giriş</button>
+            </form>
+        </div>
+
+        <!-- Yönetici Girişi -->
+        <div id="admin-login-form" class="hidden">
+            <h3>Yönetici Girişi</h3>
+            <form id="adm-login-form">
+                <input type="email" id="a-email" placeholder="admin@mahallemarket.com" required>
+                <input type="password" id="a-pass" placeholder="Şifre" required>
+                <button type="submit" style="background:#343a40;">Yönetici Girişi</button>
+            </form>
+            <p style="font-size:12px; color:#666; text-align:center; margin-top:10px;">
+                Sabit Bilgiler: <b>admin@mahallemarket.com</b> / <b>Admin123!</b>
+            </p>
+        </div>
     </div>
 
-    <!-- 2. MÜŞTERİ EKRANI -->
+    <!-- 2. MÜŞTERİ PANELİ -->
     <div id="customer-screen" class="hidden">
         <div class="card">
-            <h2>Mahalle Market</h2>
+            <h3>Hoş Geldiniz <span id="cust-name-disp"></span></h3>
             <span class="badge">Sabit 50 TL Getirme Ücreti</span>
             <button onclick="logout()" class="btn-danger" style="margin-top:10px;">Çıkış Yap</button>
         </div>
-        <h3>Yakınınızdaki Açık Marketler (3.5 km Yarıçap)</h3>
-        <div id="nearby-stores"></div>
+        <div class="card">
+            <h3>Yakınınızdaki Açık Marketler (3.5 km Yarıçap)</h3>
+            <div id="nearby-stores">Marketler yükleniyor...</div>
+        </div>
     </div>
 
-    <!-- 3. SATICI (MARKET) EKRANI -->
+    <!-- 3. SATICI PANELİ -->
     <div id="seller-screen" class="hidden">
         <div class="card">
-            <h2>Satıcı Paneli</h2>
+            <h2>Satıcı Yönetim Paneli</h2>
             <button onclick="logout()" class="btn-danger">Çıkış Yap</button>
+        </div>
+        <div class="card">
+            <h3>Şifre Değiştir</h3>
+            <form id="change-pass-form">
+                <input type="password" id="new-seller-pass" placeholder="Yeni Kalıcı Şifreniz" required>
+                <button type="submit">Şifremi Güncelle</button>
+            </form>
         </div>
         <div class="card">
             <h3>Ürün Ekle</h3>
             <form id="add-product-form">
-                <input type="text" id="prod-name" placeholder="Ürün Adı" required>
-                <input type="number" id="prod-price" placeholder="Fiyat (TL)" required>
-                <button type="submit">Ürünü Kaydet</button>
+                <select id="prod-category" required>
+                    <option value="">Kategori Seçin</option>
+                    <option value="Meyve & Sebze">Meyve & Sebze</option>
+                    <option value="Et & Tavuk">Et & Tavuk</option>
+                    <option value="Süt Ürünleri">Süt Ürünleri</option>
+                    <option value="Fırın">Fırın</option>
+                    <option value="Atıştırmalık">Atıştırmalık</option>
+                </select>
+                <input type="text" id="prod-title" placeholder="Ürün Adı (Örn: Süt 1L)" required>
+                <input type="number" id="prod-price" placeholder="Fiyat (TL)" step="0.01" required>
+                <button type="submit">Ürünü Markete Ekle</button>
             </form>
         </div>
     </div>
 
-    <!-- 4. YÖNETİCİ (ADMİN) EKRANI -->
+    <!-- 4. YÖNETİCİ PANELİ -->
     <div id="admin-screen" class="hidden">
         <div class="card">
             <h2>Yönetici Paneli</h2>
             <button onclick="logout()" class="btn-danger">Çıkış Yap</button>
         </div>
         <div class="card">
-            <h3>Yeni Market / Satıcı Ekle</h3>
+            <h3>Yeni Market Tanımla</h3>
             <form id="add-store-form">
-                <input type="text" id="store-name" placeholder="Market Adı" required>
-                <input type="email" id="store-email" placeholder="Satıcı E-Posta" required>
-                <input type="password" id="store-pass" placeholder="Geçici Şifre" required>
-                <button type="submit">Market Tanımla</button>
+                <input type="text" id="st-name" placeholder="Market Adı (Örn: Özlem Market)" required>
+                <input type="email" id="st-email" placeholder="Satıcı E-Posta" required>
+                <input type="password" id="st-pass" placeholder="Geçici Şifre Tanımla" required>
+                <input type="text" id="st-lat" placeholder="Enlem (Lat - Örn: 41.0082)" required>
+                <input type="text" id="st-lng" placeholder="Boylam (Lng - Örn: 28.9784)" required>
+                <button type="submit">Marketi Sisteme Kaydet</button>
             </form>
+        </div>
+        <div class="card">
+            <h3>Sistemdeki Kayıtlı Marketler</h3>
+            <ul id="admin-store-list">Kayıtlı market bulunamadı.</ul>
         </div>
     </div>
 
     <script type="module">
         import { supabase } from './js/supabase.js';
 
-        // Giriş İşlemi
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-
-            // Sabit Admin Kontrolü
-            if (email === 'admin@mahallemarket.com' && password === 'Admin123!') {
-                showScreen('admin-screen');
-                return;
+        // Tab Değiştirici
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            ['customer-login-form', 'seller-login-form', 'admin-login-form'].forEach(f => document.getElementById(f).classList.add('hidden'));
+            
+            if (tab === 'customer-login') {
+                document.getElementById('customer-login-form').classList.remove('hidden');
+                event.target.classList.add('active');
+            } else if (tab === 'seller-login') {
+                document.getElementById('seller-login-form').classList.remove('hidden');
+                event.target.classList.add('active');
+            } else if (tab === 'admin-login') {
+                document.getElementById('admin-login-form').classList.remove('hidden');
+                event.target.classList.add('active');
             }
+        };
 
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) {
-                alert('Giriş başarısız: ' + error.message);
-            } else {
-                // Kullanıcı rolüne göre yönlendir
-                const role = data.user.user_metadata?.role || 'customer';
-                if (role === 'seller') showScreen('seller-screen');
-                else showScreen('customer-screen');
+        // Müşteri Kayıt
+        document.getElementById('cust-register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const phone = document.getElementById('reg-phone').value;
+            const pass = document.getElementById('reg-pass').value;
+
+            const { data, error } = await supabase.auth.signUp({
+                email, password: pass,
+                options: { data: { full_name: name, phone: phone, role: 'customer' } }
+            });
+
+            if (error) alert('Kayıt Hatası: ' + error.message);
+            else {
+                alert('Kayıt Başarılı! Giriş yapabilirsiniz.');
+                document.getElementById('cust-register-form').reset();
             }
         });
 
-        window.logout = () => {
-            showScreen('login-screen');
+        // Giriş İşlemleri
+        document.getElementById('cust-login-form').addEventListener('submit', (e) => handleLogin(e, 'c-email', 'c-pass'));
+        document.getElementById('sell-login-form').addEventListener('submit', (e) => handleLogin(e, 's-email', 's-pass'));
+        document.getElementById('adm-login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('a-email').value;
+            const pass = document.getElementById('a-pass').value;
+
+            if (email === 'admin@mahallemarket.com' && pass === 'Admin123!') {
+                showScreen('admin-screen');
+                loadAdminStores();
+            } else {
+                alert('Hatalı Yönetici Bilgileri!');
+            }
+        });
+
+        async function handleLogin(e, emailId, passId) {
+            e.preventDefault();
+            const email = document.getElementById(emailId).value;
+            const password = document.getElementById(passId).value;
+
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) return alert('Giriş Hatası: ' + error.message);
+
+            const role = data.user.user_metadata?.role || 'customer';
+            if (role === 'seller') {
+                showScreen('seller-screen');
+            } else {
+                document.getElementById('cust-name-disp').innerText = data.user.user_metadata?.full_name || '';
+                showScreen('customer-screen');
+                loadNearbyStores();
+            }
+        }
+
+        // Admin: Market Ekleme
+        document.getElementById('add-store-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('st-name').value;
+            const email = document.getElementById('st-email').value;
+            const pass = document.getElementById('st-pass').value;
+            const lat = parseFloat(document.getElementById('st-lat').value);
+            const lng = parseFloat(document.getElementById('st-lng').value);
+
+            // Satıcı Kullanıcısı Oluştur
+            const { data: userData, error: userError } = await supabase.auth.signUp({
+                email: email,
+                password: pass,
+                options: { data: { role: 'seller', full_name: name } }
+            });
+
+            if (userError) return alert('Satıcı Oluşturma Hatası: ' + userError.message);
+
+            // Marketler Tablosuna Ekle
+            const { error: storeError } = await supabase.from('stores').insert([{
+                user_id: userData.user.id,
+                store_name: name,
+                latitude: lat,
+                longitude: lng,
+                is_open: true
+            }]);
+
+            if (storeError) alert('Market Tablo Hatası: ' + storeError.message);
+            else {
+                alert(`Market Başarıyla Eklendi!\nSatıcı E-Posta: ${email}\nGeçici Şifre: ${pass}`);
+                document.getElementById('add-store-form').reset();
+                loadAdminStores();
+            }
+        });
+
+        // Admin: Marketleri Listele ve Sil
+        async function loadAdminStores() {
+            const { data: stores, error } = await supabase.from('stores').select('*');
+            const list = document.getElementById('admin-store-list');
+            list.innerHTML = '';
+
+            if (stores && stores.length > 0) {
+                stores.forEach(st => {
+                    list.innerHTML += `
+                        <li>
+                            <span><b>${st.store_name}</b> (Lat: ${st.latitude}, Lng: ${st.longitude})</span>
+                            <button class="btn-danger" onclick="deleteStore('${st.id}')">Firmayı Sil</button>
+                        </li>
+                    `;
+                });
+            } else {
+                list.innerHTML = '<li>Henüz eklenmiş bir market yok.</li>';
+            }
+        }
+
+        window.deleteStore = async (id) => {
+            if (confirm('Bu marketi silmek istediğinizden emin misiniz?')) {
+                await supabase.from('stores').delete().eq('id', id);
+                loadAdminStores();
+            }
         };
 
+        // Müşteri: 3.5 km Yakındaki Marketleri Yükle
+        function loadNearbyStores() {
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const { data: stores } = await supabase.rpc('get_nearby_open_stores', {
+                    user_lat: pos.coords.latitude,
+                    user_lng: pos.coords.longitude,
+                    max_distance_km: 3.5
+                });
+
+                const div = document.getElementById('nearby-stores');
+                div.innerHTML = '';
+                if (stores && stores.length > 0) {
+                    stores.forEach(s => {
+                        div.innerHTML += `
+                            <div style="border:1px solid #ccc; padding:10px; margin-bottom:10px; border-radius:5px;">
+                                <h4>${s.store_name}</h4>
+                                <p>Mesafe: ${s.distance_km.toFixed(2)} km</p>
+                                <button style="background:#007bff;">Alışverişe Başla</button>
+                            </div>
+                        `;
+                    });
+                } else {
+                    div.innerHTML = '<p>3.5 km yarıçapınızda açık market bulunamadı.</p>';
+                }
+            });
+        }
+
+        window.logout = () => showScreen('auth-screen');
+
         function showScreen(id) {
-            ['login-screen', 'customer-screen', 'seller-screen', 'admin-screen'].forEach(s => {
+            ['auth-screen', 'customer-screen', 'seller-screen', 'admin-screen'].forEach(s => {
                 document.getElementById(s).classList.add('hidden');
             });
             document.getElementById(id).classList.remove('hidden');
