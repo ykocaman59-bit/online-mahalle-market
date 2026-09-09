@@ -1,6 +1,5 @@
-// Market Kaydet Butonu Fonksiyonu
 async function saveMarket(event) {
-    if(event) event.preventDefault();
+    if (event) event.preventDefault();
 
     const name = document.getElementById('storeName').value;
     const email = document.getElementById('storeEmail').value;
@@ -9,7 +8,7 @@ async function saveMarket(event) {
     const lng = document.getElementById('storeLng').value;
 
     if (!email || !password) {
-        alert("Lütfen e-posta ve şifre girin!");
+        alert("Lütfen e-posta ve şifre alanlarını doldurun!");
         return;
     }
 
@@ -18,18 +17,18 @@ async function saveMarket(event) {
         return;
     }
 
-    // 1. Supabase Auth tarafında kullanıcıyı otomatik oluştur
+    // 1. AŞAMA: Auth Kullanıcısı Oluşturma
     const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email,
         password: password,
     });
 
     if (authError) {
-        alert("Giriş hesabı oluşturulamadı: " + authError.message);
+        alert("Auth Hatası (Kullanıcı oluşturulamadı): " + authError.message);
         return;
     }
 
-    // 2. Veritabanına market bilgilerini kaydet
+    // 2. AŞAMA: Veritabanına Market Ekleme
     const { error: dbError } = await supabase
         .from('stores')
         .insert([
@@ -42,9 +41,9 @@ async function saveMarket(event) {
         ]);
 
     if (dbError) {
-        alert("Market tablosu hatası: " + dbError.message);
+        alert("Veritabanı Hatası: " + dbError.message);
     } else {
-        alert("Market ve Kullanıcı Hesabı Başarıyla Oluşturuldu!");
-        location.reload(); // Sayfayı yenile
+        alert("Başarılı! Kullanıcı ve Market oluşturuldu.");
+        location.reload();
     }
 }
