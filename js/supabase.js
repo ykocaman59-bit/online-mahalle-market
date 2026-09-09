@@ -1,7 +1,9 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+// Supabase JS Kütüphanesini CDN üzerinden yükler
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-const SUPABASE_URL = 'https://YOUR_SUPABASE_PROJECT_URL.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+// SUPABASE PANELİNİZDEN ALACAĞINIZ BİLGİLER
+// Project Settings -> API bölümündeki Project URL ve anon key
+const supabaseUrl = 'https://XXXXXXXXXXXXXX.supabase.co'; 
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+export const supabase = createClient(supabaseUrl, supabaseKey);
