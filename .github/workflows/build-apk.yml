@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # Elle tetiklemek için
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,35 +12,35 @@ jobs:
 
     steps:
       - name: Repositoriyi Çek
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Node.js Kurulumu
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Java JDK 17 Kurulumu
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Bağımlılıkları Yükle
+      - name: Capacitor ve Android Ortamını Hazırla
         run: |
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
           npx cap init "Mahalle Market" "com.mahallemarket.app" --web-dir .
           npx cap add android
-          npx cap sync
+          npx cap sync android
 
-      - name: Android APK Derle (Gradle)
+      - name: Gradle Yetkisi Ver ve APK Derle
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --stacktrace
 
-      - name: APK Dosyasını İndirilebilir (Artifact) Olarak Yükle
-        uses: actions/upload-artifact@v3
+      - name: APK Dosyasını Yükle
+        uses: actions/upload-artifact@v4
         with:
           name: MahalleMarket-Debug-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
