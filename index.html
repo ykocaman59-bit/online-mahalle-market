@@ -26,13 +26,13 @@
         .modal-content { background: white; padding: 20px; border-radius: 10px; width: 95%; max-width: 600px; max-height: 85vh; overflow-y: auto; }
         .prod-item, .store-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 10px 0; }
         .qty-btn { width: 32px; height: 32px; padding: 0; margin: 0 4px; display: inline-block; text-align: center; line-height: 32px; border-radius: 4px; }
-        .action-btns { display: flex; gap: 5px; }
-        .action-btns button { width: auto; padding: 6px 12px; font-size: 12px; }
+        .action-btns { display: flex; gap: 5px; flex-wrap: wrap; }
+        .action-btns button { width: auto; padding: 6px 10px; font-size: 12px; }
     </style>
 </head>
 <body>
 
-    <!-- 1. GİRİŞ & KAYIT EKRANI -->
+    <!-- 1. GİRİŞ EKRANI -->
     <div id="auth-screen" class="card">
         <h2>Mahalle Market</h2>
         <div class="tab-group">
@@ -71,7 +71,7 @@
         <div id="admin-login-form" class="hidden">
             <h3>Yönetici Girişi</h3>
             <form id="adm-login-form">
-                <input type="email" id="a-email" placeholder="admin@mahallemarket.com" required>
+                <input type="email" id="a-email" placeholder="E-Posta" required>
                 <input type="password" id="a-pass" placeholder="Şifre" required>
                 <button type="submit" style="background:#343a40;">Yönetici Girişi</button>
             </form>
@@ -144,7 +144,6 @@
                 <input type="text" id="st-name" placeholder="Market Adı" required>
                 <input type="email" id="st-email" placeholder="Satıcı E-Posta" required>
                 <input type="tel" id="st-phone" placeholder="Telefon Numarası" required>
-                <input type="password" id="st-pass" placeholder="Giriş Şifresi" required>
                 <input type="text" id="st-lat" placeholder="Enlem (Örn: 40.981)" required>
                 <input type="text" id="st-lng" placeholder="Boylam (Örn: 29.252)" required>
                 <button type="submit">Marketi Kaydet</button>
@@ -159,7 +158,6 @@
     </div>
 
     <!-- MODALLAR -->
-    <!-- Market İnceleme Modalı -->
     <div id="view-store-modal" class="modal hidden">
         <div class="modal-content">
             <h3 id="v-store-title">Market Detayları</h3>
@@ -167,13 +165,12 @@
             <p><b>E-Posta:</b> <span id="v-store-email"></span></p>
             <p><b>Telefon:</b> <span id="v-store-phone"></span></p>
             <p><b>Konum:</b> <span id="v-store-coords"></span></p>
-            <a id="v-store-call" href="#" class="btn-warning" style="display:block; text-align:center; text-decoration:none; padding:10px; border-radius:5px; font-weight:bold; margin-top:10px;">📞 Firmayı Ara (Komisyon / İptal Bildirimi)</a>
+            <a id="v-store-call" href="#" class="btn-warning" style="display:block; text-align:center; text-decoration:none; padding:10px; border-radius:5px; font-weight:bold; margin-top:10px;">📞 Firmayı Ara</a>
             <br>
             <button onclick="closeModal('view-store-modal')" class="btn-danger">Kapat</button>
         </div>
     </div>
 
-    <!-- Market Düzenleme Modalı -->
     <div id="edit-store-modal" class="modal hidden">
         <div class="modal-content">
             <h3>Market Bilgilerini Düzenle</h3>
@@ -189,7 +186,6 @@
         </div>
     </div>
 
-    <!-- Özel Silme Onay Modalı -->
     <div id="delete-store-modal" class="modal hidden">
         <div class="modal-content" style="text-align:center;">
             <h3>Market Silme Onayı</h3>
@@ -202,7 +198,6 @@
         </div>
     </div>
 
-    <!-- Yönetici Market Siparişleri Modalı -->
     <div id="admin-orders-modal" class="modal hidden">
         <div class="modal-content">
             <h3 id="admin-orders-title">Market Siparişleri</h3>
@@ -211,7 +206,6 @@
         </div>
     </div>
 
-    <!-- Müşteri Profil Modalı -->
     <div id="profile-modal" class="modal hidden">
         <div class="modal-content">
             <h3>Profil ve Adres Bilgilerim</h3>
@@ -226,7 +220,6 @@
         </div>
     </div>
 
-    <!-- Müşteri Alışveriş Modalı -->
     <div id="shop-modal" class="modal hidden">
         <div class="modal-content">
             <h3 id="shop-title">Market Ürünleri</h3>
@@ -242,7 +235,6 @@
         </div>
     </div>
 
-    <!-- Satıcı Sipariş Bildirimleri Modalı -->
     <div id="orders-modal" class="modal hidden">
         <div class="modal-content">
             <h3>Gelen Siparişler</h3>
@@ -269,7 +261,7 @@
 
         window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
 
-        // --- GİRİŞ İŞLEMLERİ ---
+        // GİRİŞ İŞLEMLERİ
         document.getElementById('cust-login-form').addEventListener('submit', (e) => handleLogin(e, 'c-email', 'c-pass', 'customer'));
         document.getElementById('sell-login-form').addEventListener('submit', (e) => handleLogin(e, 's-email', 's-pass', 'seller'));
         document.getElementById('adm-login-form').addEventListener('submit', (e) => handleLogin(e, 'a-email', 'a-pass', 'admin'));
@@ -281,11 +273,21 @@
 
             try {
                 const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                
+                // Eğer yönetici hesabı Supabase Auth'a henüz kaydolmadıysa otomatik oluştur/giriş yap
+                if (error && role === 'admin') {
+                    const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({ email, password });
+                    if (signUpErr) return alert('Yönetici Giriş Hatası: ' + signUpErr.message);
+                    currentUser = signUpData.user;
+                    showScreen('admin-screen');
+                    loadAdminStores();
+                    return;
+                }
+
                 if (error) return alert('Giriş Hatası: ' + error.message);
 
                 currentUser = data.user;
 
-                // ROL YÖNLENDİRMESİ
                 if (role === 'admin') {
                     showScreen('admin-screen');
                     loadAdminStores();
@@ -302,7 +304,50 @@
             }
         }
 
-        // --- YÖNETİCİ MARKET YÖNETİMİ ---
+        // SATICI SİPARİŞ BİLDİRİMLERİ DÜZELTİLDİ
+        window.openOrdersModal = () => {
+            document.getElementById('orders-modal').classList.remove('hidden');
+            loadSellerOrders();
+        };
+
+        async function loadSellerOrders() {
+            const list = document.getElementById('orders-list');
+            list.innerHTML = 'Siparişler çekiliyor...';
+            
+            const { data: orders, error } = await supabase.from('orders').select('*');
+            list.innerHTML = '';
+
+            if (error) {
+                list.innerHTML = `<p style="color:red">Sipariş yükleme hatası: ${error.message}</p>`;
+                return;
+            }
+
+            if (orders && orders.length > 0) {
+                orders.forEach(o => {
+                    list.innerHTML += `
+                        <div style="border:1px solid #ccc; padding:10px; margin-bottom:10px; border-radius:5px; background:#fff;">
+                            <p><b>Müşteri:</b> ${o.customer_name || 'İsimsiz'} | <b>Tel:</b> ${o.customer_phone || 'Yok'}</p>
+                            <p><b>Adres:</b> ${o.customer_address || 'Adres belirtilmemiş'}</p>
+                            <p><b>Ürünler:</b> ${o.items_summary}</p>
+                            <p><b>Toplam:</b> ${o.subtotal} TL</p>
+                            <button class="btn-danger" onclick="cancelOrder('${o.id}')">Siparişi İptal Et</button>
+                        </div>
+                    `;
+                });
+            } else {
+                list.innerHTML = '<p>Henüz kayıtlı bir sipariş yok.</p>';
+            }
+        }
+
+        window.cancelOrder = async (orderId) => {
+            if (confirm('Siparişi iptal etmek istediğinize emin misiniz?')) {
+                await supabase.from('orders').update({ status: 'iptal' }).eq('id', orderId);
+                alert('Sipariş iptal edildi.');
+                loadSellerOrders();
+            }
+        };
+
+        // YÖNETİCİ MARKET YÖNETİMİ
         document.getElementById('add-store-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const store_name = document.getElementById('st-name').value;
@@ -311,14 +356,13 @@
             const lat = document.getElementById('st-lat').value;
             const lng = document.getElementById('st-lng').value;
 
-            const { data, error } = await supabase.from('stores').insert([{
+            const { error } = await supabase.from('stores').insert([{
                 store_name, email, phone, latitude: lat, longitude: lng
             }]);
 
-            if (error) {
-                alert('Market kaydedilemedi: ' + error.message);
-            } else {
-                alert('Market başarıyla eklendi!');
+            if (error) alert('Market kaydedilemedi: ' + error.message);
+            else {
+                alert('Market eklendi!');
                 document.getElementById('add-store-form').reset();
                 loadAdminStores();
             }
@@ -352,7 +396,6 @@
             }
         };
 
-        // --- İNCELE / DÜZENLE / SİL MODALLARI ---
         window.openViewStoreModal = (id, name, email, phone, lat, lng) => {
             document.getElementById('v-store-title').innerText = name;
             document.getElementById('v-store-id').innerText = id;
@@ -372,6 +415,82 @@
         };
 
         window.saveStoreEdit = async () => {
+            const id = document.getElementById('e-store-id').value;
+            const name = document.getElementById('e-store-name').value;
+            const email = document.getElementById('e-store-email').value;
+            const phone = document.getElementById('e-store-phone').value;
+
+            const { error } = await supabase.from('stores').update({
+                store_name: name, email: email, phone: phone
+            }).eq('id', id);
+
+            if (error) alert('Güncelleme hatası: ' + error.message);
+            else {
+                alert('Market güncellendi!');
+                closeModal('edit-store-modal');
+                loadAdminStores();
+            }
+        };
+
+        window.openDeleteStoreModal = (id) => {
+            document.getElementById('del-store-id').value = id;
+            document.getElementById('delete-store-modal').classList.remove('hidden');
+        };
+
+        window.confirmDeleteStore = async () => {
+            const id = document.getElementById('del-store-id').value;
+            const { error } = await supabase.from('stores').delete().eq('id', id);
+
+            if (error) alert('Silme hatası: ' + error.message);
+            else {
+                alert('Firma başarıyla silinmiştir.');
+                closeModal('delete-store-modal');
+                loadAdminStores();
+            }
+        };
+
+        window.openAdminOrdersModal = async (storeId, storeName, type) => {
+            document.getElementById('admin-orders-title').innerText = `${storeName} - ${type === 'iptal' ? 'İptal Edilenler' : 'Aktif Siparişler'}`;
+            document.getElementById('admin-orders-modal').classList.remove('hidden');
+            
+            const list = document.getElementById('admin-orders-list');
+            list.innerHTML = 'Yükleniyor...';
+
+            let query = supabase.from('orders').select('*');
+            if (type === 'iptal') {
+                query = query.eq('status', 'iptal');
+            } else {
+                query = query.neq('status', 'iptal');
+            }
+
+            const { data: orders } = await query;
+            list.innerHTML = '';
+
+            if (orders && orders.length > 0) {
+                orders.forEach(o => {
+                    list.innerHTML += `
+                        <div style="border:1px solid #ccc; padding:10px; margin-bottom:10px; border-radius:5px;">
+                            <p><b>Müşteri:</b> ${o.customer_name} | <b>Tel:</b> ${o.customer_phone}</p>
+                            <p><b>Adres:</b> ${o.customer_address}</p>
+                            <p><b>Ürünler:</b> ${o.items_summary}</p>
+                            <p><b>Tutar:</b> ${o.subtotal} TL</p>
+                        </div>
+                    `;
+                });
+            } else {
+                list.innerHTML = '<p>Sipariş bulunmuyor.</p>';
+            }
+        };
+
+        // MÜŞTERİ İŞLEMLERİ
+        window.openProfileModal = () => {
+            document.getElementById('prof-name').value = currentUser?.user_metadata?.full_name || '';
+            document.getElementById('prof-phone').value = currentUser?.user_metadata?.phone || '';
+            document.getElementById('prof-address').value = currentUser?.user_metadata?.address || '';
+            document.getElementById('profile-modal').classList.remove('hidden');
+        };
+
+        window.saveProfile = async () => {
             const name = document.getElementById('prof-name').value;
             const phone = document.getElementById('prof-phone').value;
             const address = document.getElementById('prof-address').value;
