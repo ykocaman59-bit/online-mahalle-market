@@ -213,25 +213,45 @@
             }
         }
 
-        // Admin: Market Ekleme
+        // Admin: Market Ekleme (HEM AUTH HEM DATABASE OTOMATİK KAYIT)
         document.getElementById('add-store-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('st-name').value;
+            const email = document.getElementById('st-email').value;
+            const pass = document.getElementById('st-pass').value;
             const lat = parseFloat(document.getElementById('st-lat').value);
             const lng = parseFloat(document.getElementById('st-lng').value);
 
+            if (pass.length < 6) {
+                alert("Şifre en az 6 karakter olmalıdır!");
+                return;
+            }
+
             try {
-                const { data, error } = await supabase.from('stores').insert([{
+                // 1. AŞAMA: Supabase Auth sisteminde satıcı kullanıcısı oluştur
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: email,
+                    password: pass,
+                    options: { data: { role: 'seller', store_name: name } }
+                });
+
+                if (authError) {
+                    alert('Kullanıcı Girişi Oluşturma Hatası: ' + authError.message);
+                    return;
+                }
+
+                // 2. AŞAMA: Veritabanındaki 'stores' tablosuna kayıt at
+                const { data, error: dbError } = await supabase.from('stores').insert([{
                     store_name: name,
                     latitude: lat,
                     longitude: lng,
                     is_open: true
                 }]);
 
-                if (error) {
-                    alert('Veritabanı Hata Detayı: ' + error.message);
+                if (dbError) {
+                    alert('Veritabanı Hata Detayı: ' + dbError.message);
                 } else {
-                    alert('Market başarıyla eklendi!');
+                    alert('Market ve Giriş Hesabı Başarıyla Oluşturuldu!');
                     document.getElementById('add-store-form').reset();
                     loadAdminStores();
                 }
