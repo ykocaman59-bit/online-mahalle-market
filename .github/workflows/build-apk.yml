@@ -25,11 +25,13 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Capacitor ve Android Ortamını Hazırla
+      - name: Web Dosyalarını Hazırla ve Capacitor Kur
         run: |
+          mkdir -p www
+          cp -r index.html seller.html admin.html js css www/ 2>/dev/null || cp -r index.html seller.html admin.html js www/
           npm init -y
           npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
-          npx cap init "Mahalle Market" "com.mahallemarket.app" --web-dir .
+          npx cap init "Mahalle Market" "com.mahallemarket.app" --web-dir "www"
           npx cap add android
           npx cap sync android
 
