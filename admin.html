@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yönetici Paneli - Market Yönetimi</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Market Ekle (Geçici Şifreli)</h2>
+        <form id="add-store-form">
+            <input type="text" id="store-name" placeholder="Market Adı" required>
+            <input type="email" id="seller-email" placeholder="Satıcı E-Posta" required>
+            <input type="text" id="store-lat" placeholder="Enlem (Lat)" required>
+            <input type="text" id="store-lng" placeholder="Boylam (Lng)" required>
+            <button type="submit">Market Oluştur & Şifre Üret</button>
+        </form>
+
+        <div id="credentials-box" class="alert-box" style="display:none;"></div>
+
+        <h2>Sistemdeki Marketler</h2>
+        <ul id="store-list"></ul>
+    </div>
+
+    <script type="module">
+        import { supabase } from './js/supabase.js';
+
+        // Geçici Rastgele Şifre Üreteci
+        function generateTempPassword() {
+            return 'Mkt-' + Math.random().toString(36).slice(-8);
+        }
+
+        // Market Ekleme
+        document.getElementById('add-store-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('store-name').value;
+            const email = document.getElementById('seller-email').value;
+            const lat = parseFloat(document.getElementById('store-lat').value);
+            const lng = parseFloat(document.getElementById('store-lng').value);
+            const tempPassword = generateTempPassword();
+
+            // 1. Kullanıcı Oluştur
+            const { data: userData, error: userError } = await supabase.auth.signUp({
+                email: email,
+                password: tempPassword,
+                options: { data: { role: 'seller', full_name: name } }
+            });
+
+            if (userError) return alert('Hata: ' + userError.message);
+
+            // 2. Store Tablosuna Ekle
+            const { error: storeError } = await supabase.from('stores').insert([{
+                user_id: userData.user.id,
+                store_name: name,
+                latitude: lat,
+                longitude: lng
+            }]);
+
+            if (storeError) return alert('Market Kayıt Hatası: ' + storeError.message);
+
+            const credBox = document.getElementById('credentials-box');
+            credBox.style.display = 'block';
+            credBox.innerHTML = `<strong>Market Oluşturuldu!</strong><br>E-Posta: ${email}<br>Geçici Şifre: <code>${tempPassword}</code>`;
+            loadStores();
+        });
+
+        // Marketleri Listele ve Sil
+        async function loadStores() {
+            const { data: stores } = await supabase.from('stores').select('*');
+            const list = document.getElementById('store-list');
+            list.innerHTML = '';
+            stores.forEach(store => {
+                const li = document.createElement('li');
+                li.innerHTML = `${store.store_name} <button class="btn-danger" onclick="deleteStore('${store.id}')">Firmayı Sil</button>`;
+                list.appendChild(li);
+            });
+        }
+
+        window.deleteStore = async (id) => {
+            if (confirm('Bu firmayı silmek istediğinize emin misiniz?')) {
+                await supabase.from('stores').delete().eq('id', id);
+                loadStores();
+            }
+        };
+
+        loadStores();
+    </script>
+</body>
+</html>
+
