@@ -12,7 +12,6 @@
         button { background: #28a745; color: white; border: none; font-weight: bold; cursor: pointer; }
         button:hover { background: #218838; }
         .btn-danger { background: #dc3545; }
-        .btn-danger:hover { background: #c82333; }
         .tab-group { display: flex; gap: 5px; margin-bottom: 15px; }
         .tab-btn { flex: 1; background: #e9ecef; color: #495057; border: 1px solid #ced4da; }
         .tab-btn.active { background: #007bff; color: white; border-color: #007bff; }
@@ -34,7 +33,7 @@
             <button class="tab-btn" onclick="switchTab('admin-login')">Yönetici</button>
         </div>
 
-        <!-- Müşteri Girişi & Kayıt -->
+        <!-- Müşteri Girişi -->
         <div id="customer-login-form">
             <h3>Müşteri Girişi</h3>
             <form id="cust-login-form">
@@ -43,7 +42,7 @@
                 <button type="submit">Giriş Yap</button>
             </form>
             <hr>
-            <h4>Hesabınız Yok mu? Kayot Olun</h4>
+            <h4>Hesabınız Yok mu? Kayıt Olun</h4>
             <form id="cust-register-form">
                 <input type="text" id="reg-name" placeholder="Ad Soyad" required>
                 <input type="email" id="reg-email" placeholder="E-Posta" required>
@@ -58,7 +57,7 @@
             <h3>Satıcı (Market) Girişi</h3>
             <form id="sell-login-form">
                 <input type="email" id="s-email" placeholder="Market E-Posta" required>
-                <input type="password" id="s-pass" placeholder="Geçici veya Yeni Şifre" required>
+                <input type="password" id="s-pass" placeholder="Şifre" required>
                 <button type="submit">Market Paneline Giriş</button>
             </form>
         </div>
@@ -97,26 +96,18 @@
             <button onclick="logout()" class="btn-danger">Çıkış Yap</button>
         </div>
         <div class="card">
-            <h3>Şifre Değiştir</h3>
-            <form id="change-pass-form">
-                <input type="password" id="new-seller-pass" placeholder="Yeni Kalıcı Şifreniz" required>
-                <button type="submit">Şifremi Güncelle</button>
-            </form>
-        </div>
-        <div class="card">
             <h3>Ürün Ekle</h3>
             <form id="add-product-form">
                 <select id="prod-category" required>
                     <option value="">Kategori Seçin</option>
                     <option value="Meyve & Sebze">Meyve & Sebze</option>
-                    <option value="Et & Tavuk">Et & Tavuk</option>
                     <option value="Süt Ürünleri">Süt Ürünleri</option>
                     <option value="Fırın">Fırın</option>
                     <option value="Atıştırmalık">Atıştırmalık</option>
                 </select>
-                <input type="text" id="prod-title" placeholder="Ürün Adı (Örn: Süt 1L)" required>
+                <input type="text" id="prod-title" placeholder="Ürün Adı" required>
                 <input type="number" id="prod-price" placeholder="Fiyat (TL)" step="0.01" required>
-                <button type="submit">Ürünü Markete Ekle</button>
+                <button type="submit">Ürünü Ekle</button>
             </form>
         </div>
     </div>
@@ -130,17 +121,17 @@
         <div class="card">
             <h3>Yeni Market Tanımla</h3>
             <form id="add-store-form">
-                <input type="text" id="st-name" placeholder="Market Adı (Örn: Özlem Market)" required>
+                <input type="text" id="st-name" placeholder="Market Adı (Örn: Battalgazi Market)" required>
                 <input type="email" id="st-email" placeholder="Satıcı E-Posta" required>
-                <input type="password" id="st-pass" placeholder="Geçici Şifre Tanımla" required>
-                <input type="text" id="st-lat" placeholder="Enlem (Lat - Örn: 41.0082)" required>
-                <input type="text" id="st-lng" placeholder="Boylam (Lng - Örn: 28.9784)" required>
-                <button type="submit">Marketi Sisteme Kaydet</button>
+                <input type="password" id="st-pass" placeholder="Şifre" required>
+                <input type="text" id="st-lat" placeholder="Enlem (Örn: 40.9702)" required>
+                <input type="text" id="st-lng" placeholder="Boylam (Örn: 29.2618)" required>
+                <button type="submit">Marketi Kaydet</button>
             </form>
         </div>
         <div class="card">
             <h3>Sistemdeki Kayıtlı Marketler</h3>
-            <ul id="admin-store-list">Kayıtlı market bulunamadı.</ul>
+            <ul id="admin-store-list">Marketler yükleniyor...</ul>
         </div>
     </div>
 
@@ -154,14 +145,12 @@
             
             if (tab === 'customer-login') {
                 document.getElementById('customer-login-form').classList.remove('hidden');
-                event.target.classList.add('active');
             } else if (tab === 'seller-login') {
                 document.getElementById('seller-login-form').classList.remove('hidden');
-                event.target.classList.add('active');
             } else if (tab === 'admin-login') {
                 document.getElementById('admin-login-form').classList.remove('hidden');
-                event.target.classList.add('active');
             }
+            if(event) event.target.classList.add('active');
         };
 
         // Müşteri Kayıt
@@ -178,10 +167,7 @@
             });
 
             if (error) alert('Kayıt Hatası: ' + error.message);
-            else {
-                alert('Kayıt Başarılı! Giriş yapabilirsiniz.');
-                document.getElementById('cust-register-form').reset();
-            }
+            else alert('Kayıt Başarılı! Giriş yapabilirsiniz.');
         });
 
         // Giriş İşlemleri
@@ -218,7 +204,7 @@
             }
         }
 
-        // Admin: Market Ekleme
+        // Admin: Doğrudan Stores Tablosuna Ekleme (Çakışmasız)
         document.getElementById('add-store-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('st-name').value;
@@ -227,33 +213,24 @@
             const lat = parseFloat(document.getElementById('st-lat').value);
             const lng = parseFloat(document.getElementById('st-lng').value);
 
-            // Satıcı Kullanıcısı Oluştur
-            const { data: userData, error: userError } = await supabase.auth.signUp({
-                email: email,
-                password: pass,
-                options: { data: { role: 'seller', full_name: name } }
-            });
-
-            if (userError) return alert('Satıcı Oluşturma Hatası: ' + userError.message);
-
-            // Marketler Tablosuna Ekle
-            const { error: storeError } = await supabase.from('stores').insert([{
-                user_id: userData.user.id,
+            const { data, error } = await supabase.from('stores').insert([{
                 store_name: name,
+                seller_email: email,
                 latitude: lat,
                 longitude: lng,
                 is_open: true
-            }]);
+            }]).select();
 
-            if (storeError) alert('Market Tablo Hatası: ' + storeError.message);
-            else {
-                alert(`Market Başarıyla Eklendi!\nSatıcı E-Posta: ${email}\nGeçici Şifre: ${pass}`);
+            if (error) {
+                alert('Market Kayıt Hatası: ' + error.message);
+            } else {
+                alert('Market başarıyla sisteme kaydedildi!');
                 document.getElementById('add-store-form').reset();
                 loadAdminStores();
             }
         });
 
-        // Admin: Marketleri Listele ve Sil
+        // Admin: Market Listeleme
         async function loadAdminStores() {
             const { data: stores, error } = await supabase.from('stores').select('*');
             const list = document.getElementById('admin-store-list');
@@ -263,8 +240,8 @@
                 stores.forEach(st => {
                     list.innerHTML += `
                         <li>
-                            <span><b>${st.store_name}</b> (Lat: ${st.latitude}, Lng: ${st.longitude})</span>
-                            <button class="btn-danger" onclick="deleteStore('${st.id}')">Firmayı Sil</button>
+                            <span><b>${st.store_name}</b> (${st.seller_email || 'E-posta yok'})</span>
+                            <button class="btn-danger" onclick="deleteStore('${st.id}')">Sil</button>
                         </li>
                     `;
                 });
@@ -280,15 +257,10 @@
             }
         };
 
-        // Müşteri: 3.5 km Yakındaki Marketleri Yükle
+        // Müşteri: Yakındaki Marketler
         function loadNearbyStores() {
             navigator.geolocation.getCurrentPosition(async (pos) => {
-                const { data: stores } = await supabase.rpc('get_nearby_open_stores', {
-                    user_lat: pos.coords.latitude,
-                    user_lng: pos.coords.longitude,
-                    max_distance_km: 3.5
-                });
-
+                const { data: stores } = await supabase.from('stores').select('*');
                 const div = document.getElementById('nearby-stores');
                 div.innerHTML = '';
                 if (stores && stores.length > 0) {
@@ -296,14 +268,15 @@
                         div.innerHTML += `
                             <div style="border:1px solid #ccc; padding:10px; margin-bottom:10px; border-radius:5px;">
                                 <h4>${s.store_name}</h4>
-                                <p>Mesafe: ${s.distance_km.toFixed(2)} km</p>
                                 <button style="background:#007bff;">Alışverişe Başla</button>
                             </div>
                         `;
                     });
                 } else {
-                    div.innerHTML = '<p>3.5 km yarıçapınızda açık market bulunamadı.</p>';
+                    div.innerHTML = '<p>Açık market bulunamadı.</p>';
                 }
+            }, () => {
+                document.getElementById('nearby-stores').innerHTML = '<p>Konum izni alınamadı.</p>';
             });
         }
 
