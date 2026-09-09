@@ -14,10 +14,10 @@ jobs:
       - name: Repositoriyi Çek
         uses: actions/checkout@v4
 
-      - name: Node.js Kurulumu
+      - name: Node.js 22 Kurulumu
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Java JDK 17 Kurulumu
         uses: actions/setup-java@v4
