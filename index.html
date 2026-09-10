@@ -29,6 +29,9 @@
         .qty-btn { width: 32px; height: 32px; padding: 0; margin: 0 4px; display: inline-block; text-align: center; line-height: 32px; border-radius: 4px; }
         .action-btns { display: flex; gap: 5px; flex-wrap: wrap; }
         .action-btns button { width: auto; padding: 6px 10px; font-size: 12px; }
+        .order-card { border: 1px solid #ddd; padding: 12px; margin-bottom: 10px; border-radius: 6px; background: #fff; }
+        .order-card.cancelled { background: #fff5f5; border-color: #f5c6cb; }
+        .filter-box { display: flex; gap: 10px; margin-bottom: 12px; }
     </style>
 </head>
 <body>
@@ -86,7 +89,8 @@
                 <h3>Hoş Geldiniz <span id="cust-name-disp"></span></h3>
                 <span class="badge">Sabit 50 TL Getirme Ücreti</span>
             </div>
-            <div>
+            <div style="display:flex; gap:5px;">
+                <button onclick="openCustomerOrdersModal()" class="btn-warning" style="width:auto;">Siparişlerim 🛍️</button>
                 <button onclick="openProfileModal()" class="btn-info" style="width:auto;">Profilim</button>
                 <button onclick="logout()" class="btn-danger" style="width:auto;">Çıkış</button>
             </div>
@@ -145,9 +149,13 @@
             <h3>Yeni Market Tanımla</h3>
             <form id="add-store-form">
                 <input type="text" id="st-name" placeholder="Market Adı" required>
+                <input type="email" id="st-email" placeholder="E-Posta Adresi">
                 <input type="tel" id="st-phone" placeholder="Telefon Numarası" required>
-                <input type="text" id="st-lat" placeholder="Enlem (Örn: 40.981)" required>
-                <input type="text" id="st-lng" placeholder="Boylam (Örn: 29.252)" required>
+                <textarea id="st-address" rows="2" placeholder="İşyeri Açık Adresi"></textarea>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="st-lat" placeholder="Enlem (Örn: 40.981)" required>
+                    <input type="text" id="st-lng" placeholder="Boylam (Örn: 29.252)" required>
+                </div>
                 <button type="submit">Marketi Kaydet</button>
             </form>
         </div>
@@ -164,7 +172,9 @@
         <div class="modal-content">
             <h3 id="v-store-title">Market Detayları</h3>
             <p><b>Market ID:</b> <span id="v-store-id"></span></p>
+            <p><b>E-Posta:</b> <span id="v-store-email"></span></p>
             <p><b>Telefon:</b> <span id="v-store-phone"></span></p>
+            <p><b>Açık Adres:</b> <span id="v-store-address"></span></p>
             <p><b>Konum:</b> <span id="v-store-coords"></span></p>
             <a id="v-store-call" href="#" class="btn-warning" style="display:block; text-align:center; text-decoration:none; padding:10px; border-radius:5px; font-weight:bold; margin-top:10px;">📞 Firmayı Ara</a>
             <br>
@@ -178,9 +188,13 @@
             <input type="hidden" id="e-store-id">
             <label>Market Adı:</label>
             <input type="text" id="e-store-name">
+            <label>E-Posta:</label>
+            <input type="email" id="e-store-email">
             <label>Telefon:</label>
             <input type="tel" id="e-store-phone">
-            <button onclick="saveStoreEdit()" style="background:#28a745;">Güncelle</button>
+            <label>İşyeri Açık Adresi:</label>
+            <textarea id="e-store-address" rows="3"></textarea>
+            <button onclick="saveStoreEdit()" style="background:#28a745; margin-top:10px;">Güncelle</button>
             <button onclick="closeModal('edit-store-modal')" class="btn-danger">İptal</button>
         </div>
     </div>
@@ -197,27 +211,33 @@
         </div>
     </div>
 
-    <div id="admin-orders-modal" class="modal hidden">
+    <!-- SATICI İPTAL SEBEBİ MODALI (TRENDYOL TARZI) -->
+    <div id="cancel-reason-modal" class="modal hidden">
         <div class="modal-content">
-            <h3 id="admin-orders-title">Market Siparişleri</h3>
-            <div id="admin-orders-list">Yükleniyor...</div>
-            <button onclick="closeModal('admin-orders-modal')" class="btn-danger" style="margin-top:10px;">Kapat</button>
+            <h3>Sipariş İptal Sebebi Seçin</h3>
+            <input type="hidden" id="cancel-target-order-id">
+            <label><input type="radio" name="cancel_reason" value="Ürün Tedarik Edilemedi / Stokta Yok" checked> Ürün Tedarik Edilemedi / Stokta Yok</label><br>
+            <label><input type="radio" name="cancel_reason" value="Fiyat / Görsel Hatası"> Fiyat veya Görsel Hatası</label><br>
+            <label><input type="radio" name="cancel_reason" value="Market Kapanış Saati Geçildi"> Kapanış Saati Nedenli Teslim Edilemiyor</label><br>
+            <label><input type="radio" name="cancel_reason" value="Adres Teslimat Alanı Dışında"> Teslimat Alanı Dışında</label><br><br>
+            <button onclick="submitSellerCancel()" class="btn-danger">İptali Onayla ve Kaydet</button>
+            <button onclick="closeModal('cancel-reason-modal')" style="background:#6c757d; margin-top:5px;">Vazgeç</button>
         </div>
     </div>
 
-    <!-- YÖNETİCİ MÜŞTERİ İLETİŞİM DÜZENLEME MODALI -->
-    <div id="admin-edit-customer-modal" class="modal hidden">
+    <!-- YÖNETİCİ MARKET SİPARİŞLERİ MODALI -->
+    <div id="admin-orders-modal" class="modal hidden">
         <div class="modal-content">
-            <h3>Müşteri İletişim Bilgilerini Düzenle</h3>
-            <input type="hidden" id="a-edit-order-id">
-            <label>Müşteri Ad Soyad:</label>
-            <input type="text" id="a-cust-name">
-            <label>Telefon Numarası:</label>
-            <input type="tel" id="a-cust-phone">
-            <label>Teslimat Adresi:</label>
-            <textarea id="a-cust-address" rows="3"></textarea>
-            <button onclick="saveAdminCustomerEdit()" style="background:#28a745; margin-top:10px;">Kaydet ve Güncelle</button>
-            <button onclick="closeModal('admin-edit-customer-modal')" class="btn-danger">İptal</button>
+            <h3 id="admin-orders-title">Market Siparişleri</h3>
+            <div class="filter-box">
+                <input type="text" id="admin-search-order" placeholder="12 Haneli Sipariş No Ara..." onkeyup="refreshAdminOrdersList()">
+                <select id="admin-sort-order" onchange="refreshAdminOrdersList()" style="width:140px;">
+                    <option value="desc">Yeni -> Eski</option>
+                    <option value="asc">Eski -> Yeni</option>
+                </select>
+            </div>
+            <div id="admin-orders-list">Yükleniyor...</div>
+            <button onclick="closeModal('admin-orders-modal')" class="btn-danger" style="margin-top:10px;">Kapat</button>
         </div>
     </div>
 
@@ -250,13 +270,29 @@
         </div>
     </div>
 
-    <!-- SATICI SİPARİŞLERİ MODALI (SEKMELİ) -->
+    <!-- MÜŞTERİ SİPARİŞLERİM MODALI -->
+    <div id="cust-orders-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Siparişlerim</h3>
+            <div id="cust-orders-list">Yükleniyor...</div>
+            <button onclick="closeModal('cust-orders-modal')" class="btn-danger" style="margin-top:10px;">Kapat</button>
+        </div>
+    </div>
+
+    <!-- SATICI SİPARİŞLERİ MODALI -->
     <div id="orders-modal" class="modal hidden">
         <div class="modal-content">
             <h3>Sipariş Takibi</h3>
             <div class="tab-group">
                 <button class="tab-btn active" id="tab-active-orders" onclick="switchSellerOrdersTab('aktif')">Aktif Siparişler</button>
                 <button class="tab-btn" id="tab-cancelled-orders" onclick="switchSellerOrdersTab('iptal')">İptal Edilenler</button>
+            </div>
+            <div class="filter-box">
+                <input type="text" id="seller-search-order" placeholder="Sipariş No ile Arama..." onkeyup="loadSellerOrders()">
+                <select id="seller-sort-order" onchange="loadSellerOrders()" style="width:140px;">
+                    <option value="desc">Yeni -> Eski</option>
+                    <option value="asc">Eski -> Yeni</option>
+                </select>
             </div>
             <div id="orders-list">Siparişler yükleniyor...</div>
             <button onclick="closeModal('orders-modal')" class="btn-danger" style="margin-top:10px;">Kapat</button>
@@ -272,6 +308,16 @@
         let cart = {};
         let currentSellerOrderFilter = 'aktif';
         let currentAdminStoreFilter = { storeId: null, storeName: '', type: 'aktif' };
+
+        // 12 Haneli Benzersiz Sipariş Numarası Üretici
+        function generateOrderNumber() {
+            const chars = '0123456789';
+            let num = '';
+            for (let i = 0; i < 12; i++) {
+                num += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return 'ORD-' + num;
+        }
 
         window.switchTab = (tab) => {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -364,6 +410,9 @@
             const list = document.getElementById('orders-list');
             list.innerHTML = 'Siparişler çekiliyor...';
             
+            const searchVal = document.getElementById('seller-search-order').value.trim();
+            const sortVal = document.getElementById('seller-sort-order').value;
+
             let query = supabase.from('orders').select('*');
             if (currentStoreId) query = query.eq('store_id', currentStoreId);
 
@@ -372,6 +421,12 @@
             } else {
                 query = query.neq('status', 'iptal');
             }
+
+            if (searchVal) {
+                query = query.ilike('order_number', `%${searchVal}%`);
+            }
+
+            query = query.order('created_at', { ascending: sortVal === 'asc' });
 
             const { data: orders, error } = await query;
             list.innerHTML = '';
@@ -384,14 +439,19 @@
             if (orders && orders.length > 0) {
                 orders.forEach(o => {
                     const isCancelled = o.status === 'iptal';
+                    const orderNo = o.order_number || 'ORD-BELİRTİLMEMİŞ';
                     list.innerHTML += `
-                        <div style="border:1px solid #ccc; padding:10px; margin-bottom:10px; border-radius:5px; background:${isCancelled ? '#fff0f0' : '#fff'};">
+                        <div class="order-card ${isCancelled ? 'cancelled' : ''}">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <b style="color:#007bff;">No: ${orderNo}</b>
+                                <small>${new Date(o.created_at || Date.now()).toLocaleString('tr-TR')}</small>
+                            </div>
                             <p><b>Müşteri:</b> ${o.customer_name || 'İsimsiz'} | <b>Tel:</b> ${o.customer_phone || 'Yok'}</p>
                             <p><b>Adres:</b> ${o.customer_address || 'Adres belirtilmemiş'}</p>
                             <p><b>Ürünler:</b> ${o.items_summary}</p>
                             <p><b>Toplam:</b> ${o.subtotal} TL</p>
-                            <p><b>Durum:</b> <span style="color:${isCancelled ? 'red' : 'green'}; font-weight:bold;">${isCancelled ? 'İptal Edildi' : 'Aktif / Onaylı'}</span></p>
-                            ${!isCancelled ? `<button class="btn-danger" onclick="cancelOrder('${o.id}')">Siparişi İptal Et</button>` : ''}
+                            <p><b>Durum:</b> <span style="color:${isCancelled ? 'red' : 'green'}; font-weight:bold;">${isCancelled ? 'İptal Edildi (' + (o.cancelled_by || 'İptal') + ')' : 'Aktif / Onaylı'}</span></p>
+                            ${!isCancelled ? `<button class="btn-danger" onclick="openCancelReasonModal('${o.id}')">Siparişi İptal Et (Neden Belirt)</button>` : ''}
                         </div>
                     `;
                 });
@@ -401,32 +461,48 @@
             updateSellerOrderBadge();
         }
 
-        window.cancelOrder = async (orderId) => {
-            if (confirm('Siparişi iptal etmek istediğinize emin misiniz?')) {
-                const { error } = await supabase.from('orders').update({ status: 'iptal' }).eq('id', orderId);
-                if (error) alert('İptal hatası: ' + error.message);
-                else {
-                    alert('Sipariş iptal edildi.');
-                    loadSellerOrders();
-                }
+        window.openCancelReasonModal = (orderId) => {
+            document.getElementById('cancel-target-order-id').value = orderId;
+            document.getElementById('cancel-reason-modal').classList.remove('hidden');
+        };
+
+        window.submitSellerCancel = async () => {
+            const orderId = document.getElementById('cancel-target-order-id').value;
+            const reason = document.querySelector('input[name="cancel_reason"]:checked').value;
+
+            const { error } = await supabase.from('orders').update({
+                status: 'iptal',
+                cancelled_by: `Satıcı İptali (Sebep: ${reason})`
+            }).eq('id', orderId);
+
+            if (error) alert('İptal hatası: ' + error.message);
+            else {
+                alert('Sipariş başarıyla iptal edildi ve iptal kategorisine aktarıldı.');
+                closeModal('cancel-reason-modal');
+                loadSellerOrders();
             }
         };
 
-        // YÖNETİCİ MARKET YÖNETİMİ (SCHEMA CACHE HATA DÜZELTMESİ)
+        // YÖNETİCİ MARKET YÖNETİMİ
         document.getElementById('add-store-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const store_name = document.getElementById('st-name').value;
+            const email = document.getElementById('st-email').value;
             const phone = document.getElementById('st-phone').value;
+            const address = document.getElementById('st-address').value;
             const lat = document.getElementById('st-lat').value;
             const lng = document.getElementById('st-lng').value;
 
-            const { error } = await supabase.from('stores').insert([{
-                store_name, phone, latitude: lat, longitude: lng
-            }]);
+            // Supabase şemasına uyumlu güvenli ekleme
+            const insertObj = { store_name, phone, latitude: lat, longitude: lng };
+            if (email) insertObj.email = email;
+            if (address) insertObj.address = address;
+
+            const { error } = await supabase.from('stores').insert([insertObj]);
 
             if (error) alert('Market kaydedilemedi: ' + error.message);
             else {
-                alert('Market eklendi!');
+                alert('Market başarıyla eklendi!');
                 document.getElementById('add-store-form').reset();
                 loadAdminStores();
             }
@@ -443,11 +519,11 @@
                         <div class="store-item">
                             <div>
                                 <b>${s.store_name}</b> <br>
-                                <small>Tel: ${s.phone || 'Yok'}</small>
+                                <small>Tel: ${s.phone || 'Yok'} | Adres: ${s.address || 'Girilmemiş'}</small>
                             </div>
                             <div class="action-btns">
-                                <button class="btn-info" onclick="openViewStoreModal('${s.id}', '${s.store_name}', '${s.phone}', '${s.latitude}', '${s.longitude}')">İncele</button>
-                                <button class="btn-warning" onclick="openEditStoreModal('${s.id}', '${s.store_name}', '${s.phone}')">Düzenle</button>
+                                <button class="btn-info" onclick="openViewStoreModal('${s.id}', '${s.store_name}', '${s.email || ''}', '${s.phone || ''}', '${s.address || ''}', '${s.latitude}', '${s.longitude}')">İncele</button>
+                                <button class="btn-warning" onclick="openEditStoreModal('${s.id}', '${s.store_name}', '${s.email || ''}', '${s.phone || ''}', '${s.address || ''}')">Düzenle</button>
                                 <button class="btn-danger" onclick="openDeleteStoreModal('${s.id}')">Sil</button>
                                 <button style="background:#007bff; color:white;" onclick="openAdminOrdersModal('${s.id}', '${s.store_name}', 'aktif')">Siparişler</button>
                                 <button style="background:#6c757d; color:white;" onclick="openAdminOrdersModal('${s.id}', '${s.store_name}', 'iptal')">İptal Siparişler</button>
@@ -460,35 +536,42 @@
             }
         };
 
-        window.openViewStoreModal = (id, name, phone, lat, lng) => {
+        window.openViewStoreModal = (id, name, email, phone, address, lat, lng) => {
             document.getElementById('v-store-title').innerText = name;
             document.getElementById('v-store-id').innerText = id;
+            document.getElementById('v-store-email').innerText = email || 'Belirtilmedi';
             document.getElementById('v-store-phone').innerText = phone || 'Belirtilmedi';
+            document.getElementById('v-store-address').innerText = address || 'Belirtilmedi';
             document.getElementById('v-store-coords').innerText = `${lat}, ${lng}`;
             document.getElementById('v-store-call').href = `tel:${phone}`;
             document.getElementById('view-store-modal').classList.remove('hidden');
         };
 
-        window.openEditStoreModal = (id, name, phone) => {
+        window.openEditStoreModal = (id, name, email, phone, address) => {
             document.getElementById('e-store-id').value = id;
             document.getElementById('e-store-name').value = name;
+            document.getElementById('e-store-email').value = email || '';
             document.getElementById('e-store-phone').value = phone || '';
+            document.getElementById('e-store-address').value = address || '';
             document.getElementById('edit-store-modal').classList.remove('hidden');
         };
 
         window.saveStoreEdit = async () => {
             const id = document.getElementById('e-store-id').value;
             const name = document.getElementById('e-store-name').value;
+            const email = document.getElementById('e-store-email').value;
             const phone = document.getElementById('e-store-phone').value;
+            const address = document.getElementById('e-store-address').value;
 
-            // 'email' alanı veritabanı şemasında mevcut olmadığı için çıkarıldı
-            const { error } = await supabase.from('stores').update({
-                store_name: name, phone: phone
-            }).eq('id', id);
+            const updateData = { store_name: name, phone: phone };
+            if (email) updateData.email = email;
+            if (address) updateData.address = address;
+
+            const { error } = await supabase.from('stores').update(updateData).eq('id', id);
 
             if (error) alert('Güncelleme hatası: ' + error.message);
             else {
-                alert('Market güncellendi!');
+                alert('Firma başarıyla güncellendi!');
                 closeModal('edit-store-modal');
                 loadAdminStores();
             }
@@ -511,7 +594,7 @@
             }
         };
 
-        // YÖNETİCİ SİPARİŞ VEYA MÜŞTERİ BİLGİLERİNİ GÖRME/DÜZENLEME
+        // YÖNETİCİ MARKET SİPARİŞ LİSTELEME VE İLETİŞİM
         window.openAdminOrdersModal = async (storeId, storeName, type) => {
             currentAdminStoreFilter = { storeId, storeName, type };
             document.getElementById('admin-orders-title').innerText = `${storeName} - ${type === 'iptal' ? 'İptal Edilenler' : 'Aktif Siparişler'}`;
@@ -519,10 +602,13 @@
             refreshAdminOrdersList();
         };
 
-        async function refreshAdminOrdersList() {
+        window.refreshAdminOrdersList = async () => {
             const { storeId, type } = currentAdminStoreFilter;
             const list = document.getElementById('admin-orders-list');
             list.innerHTML = 'Yükleniyor...';
+
+            const searchVal = document.getElementById('admin-search-order').value.trim();
+            const sortVal = document.getElementById('admin-sort-order').value;
 
             let query = supabase.from('orders').select('*').eq('store_id', storeId);
             if (type === 'iptal') {
@@ -531,51 +617,95 @@
                 query = query.neq('status', 'iptal');
             }
 
+            if (searchVal) {
+                query = query.ilike('order_number', `%${searchVal}%`);
+            }
+
+            query = query.order('created_at', { ascending: sortVal === 'asc' });
+
             const { data: orders } = await query;
             list.innerHTML = '';
 
             if (orders && orders.length > 0) {
                 orders.forEach(o => {
+                    const isCancelled = o.status === 'iptal';
+                    const orderNo = o.order_number || 'ORD-BELİRTİLMEMİŞ';
                     list.innerHTML += `
-                        <div style="border:1px solid #ccc; padding:10px; margin-bottom:10px; border-radius:5px;">
+                        <div class="order-card ${isCancelled ? 'cancelled' : ''}">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <b style="color:#007bff;">Sipariş No: ${orderNo}</b>
+                                <small>${new Date(o.created_at || Date.now()).toLocaleString('tr-TR')}</small>
+                            </div>
                             <p><b>Müşteri:</b> ${o.customer_name || 'İsimsiz'} | <b>Tel:</b> ${o.customer_phone || 'Yok'}</p>
-                            <p><b>Adres:</b> ${o.customer_address || 'Adres Girilmemiş'}</p>
+                            <p><b>Teslimat Adresi:</b> ${o.customer_address || 'Adres Yok'}</p>
                             <p><b>Ürünler:</b> ${o.items_summary}</p>
                             <p><b>Tutar:</b> ${o.subtotal} TL</p>
-                            <button class="btn-info" onclick="openAdminCustomerEditModal('${o.id}', '${o.customer_name || ''}', '${o.customer_phone || ''}', '${o.customer_address || ''}')">Müşteri Bilgilerini Düzenle</button>
+                            <p><b>Durum/İptal Eden:</b> ${isCancelled ? `<span style="color:red; font-weight:bold;">${o.cancelled_by || 'İptal Edildi'}</span>` : '<span style="color:green; font-weight:bold;">Aktif</span>'}</p>
+                            
+                            <div style="display:flex; gap:5px; margin-top:8px;">
+                                <a href="tel:${o.customer_phone}" class="btn-warning" style="text-decoration:none; padding:6px 10px; font-size:12px; border-radius:4px; font-weight:bold;">📞 Telefon Et</a>
+                                <a href="https://wa.me/${(o.customer_phone||'').replace(/\D/g,'')}" target="_blank" class="btn-info" style="text-decoration:none; padding:6px 10px; font-size:12px; border-radius:4px; font-weight:bold; background:#25D366;">💬 Canlı Destek (WhatsApp)</a>
+                            </div>
                         </div>
                     `;
                 });
             } else {
                 list.innerHTML = '<p>Sipariş bulunmuyor.</p>';
             }
-        }
-
-        window.openAdminCustomerEditModal = (orderId, name, phone, address) => {
-            document.getElementById('a-edit-order-id').value = orderId;
-            document.getElementById('a-cust-name').value = name;
-            document.getElementById('a-cust-phone').value = phone;
-            document.getElementById('a-cust-address').value = address;
-            document.getElementById('admin-edit-customer-modal').classList.remove('hidden');
         };
 
-        window.saveAdminCustomerEdit = async () => {
-            const orderId = document.getElementById('a-edit-order-id').value;
-            const name = document.getElementById('a-cust-name').value;
-            const phone = document.getElementById('a-cust-phone').value;
-            const address = document.getElementById('a-cust-address').value;
+        // MÜŞTERİ SİPARİŞLERİM & İPTAL
+        window.openCustomerOrdersModal = async () => {
+            document.getElementById('cust-orders-modal').classList.remove('hidden');
+            const list = document.getElementById('cust-orders-list');
+            list.innerHTML = 'Siparişleriniz yükleniyor...';
 
-            const { error } = await supabase.from('orders').update({
-                customer_name: name,
-                customer_phone: phone,
-                customer_address: address
-            }).eq('id', orderId);
+            const { data: orders, error } = await supabase.from('orders')
+                .select('*')
+                .eq('customer_id', currentUser.id)
+                .order('created_at', { ascending: false });
 
-            if (error) alert('Müşteri bilgisi güncellenemedi: ' + error.message);
-            else {
-                alert('Müşteri iletişim bilgileri güncellendi!');
-                closeModal('admin-edit-customer-modal');
-                refreshAdminOrdersList();
+            list.innerHTML = '';
+
+            if (error) {
+                list.innerHTML = `<p style="color:red">Hata: ${error.message}</p>`;
+                return;
+            }
+
+            if (orders && orders.length > 0) {
+                orders.forEach(o => {
+                    const isCancelled = o.status === 'iptal';
+                    const orderNo = o.order_number || 'ORD-BELİRTİLMEMİŞ';
+                    list.innerHTML += `
+                        <div class="order-card ${isCancelled ? 'cancelled' : ''}">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <b style="color:#007bff;">Sipariş No: ${orderNo}</b>
+                                <small>${new Date(o.created_at || Date.now()).toLocaleString('tr-TR')}</small>
+                            </div>
+                            <p><b>Ürünler:</b> ${o.items_summary}</p>
+                            <p><b>Toplam Tutar:</b> ${o.subtotal} TL</p>
+                            <p><b>Durum:</b> <span style="color:${isCancelled ? 'red' : 'green'}; font-weight:bold;">${isCancelled ? 'İptal Edildi (' + (o.cancelled_by || 'İptal') + ')' : 'Hazırlanıyor / Aktif'}</span></p>
+                            ${!isCancelled ? `<button class="btn-danger" onclick="customerCancelOrder('${o.id}')">Siparişi İptal Et</button>` : ''}
+                        </div>
+                    `;
+                });
+            } else {
+                list.innerHTML = '<p>Henüz verdiğiniz bir sipariş bulunmuyor.</p>';
+            }
+        };
+
+        window.customerCancelOrder = async (orderId) => {
+            if (confirm('Siparişinizi iptal etmek istediğinize emin misiniz?')) {
+                const { error } = await supabase.from('orders').update({
+                    status: 'iptal',
+                    cancelled_by: 'Müşteri İptali'
+                }).eq('id', orderId);
+
+                if (error) alert('Hata: ' + error.message);
+                else {
+                    alert('Siparişiniz iptal edildi.');
+                    openCustomerOrdersModal();
+                }
             }
         };
 
@@ -685,7 +815,10 @@
             }
             if (itemsArray.length === 0) return alert('Sepetiniz boş!');
 
+            const order_number = generateOrderNumber();
+
             const { error } = await supabase.from('orders').insert([{
+                order_number: order_number,
                 store_id: activeShopStoreId,
                 customer_id: currentUser.id,
                 customer_name: currentUser.user_metadata?.full_name || currentUser.email,
@@ -698,7 +831,7 @@
 
             if (error) alert('Hata: ' + error.message);
             else {
-                alert('Sipariş başarıyla alındı!');
+                alert(`Siparişiniz Oluşturuldu!\nSipariş Takip No: ${order_number}`);
                 closeModal('shop-modal');
             }
         };
