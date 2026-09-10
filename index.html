@@ -211,15 +211,15 @@
         </div>
     </div>
 
-    <!-- SATICI İPTAL SEBEBİ MODALI (TRENDYOL TARZI) -->
+    <!-- SATICI İPTAL SEBEBİ MODALI -->
     <div id="cancel-reason-modal" class="modal hidden">
         <div class="modal-content">
             <h3>Sipariş İptal Sebebi Seçin</h3>
             <input type="hidden" id="cancel-target-order-id">
             <label><input type="radio" name="cancel_reason" value="Ürün Tedarik Edilemedi / Stokta Yok" checked> Ürün Tedarik Edilemedi / Stokta Yok</label><br>
-            <label><input type="radio" name="cancel_reason" value="Fiyat / Görsel Hatası"> Fiyat veya Görsel Hatası</label><br>
-            <label><input type="radio" name="cancel_reason" value="Market Kapanış Saati Geçildi"> Kapanış Saati Nedenli Teslim Edilemiyor</label><br>
-            <label><input type="radio" name="cancel_reason" value="Adres Teslimat Alanı Dışında"> Teslimat Alanı Dışında</label><br><br>
+            <label><input type="radio" name="cancel_reason" value="Fiyat veya Görsel Hatası"> Fiyat veya Görsel Hatası</label><br>
+            <label><input type="radio" name="cancel_reason" value="Kapanış Saati Nedenli Teslim Edilemiyor"> Kapanış Saati Nedenli Teslim Edilemiyor</label><br>
+            <label><input type="radio" name="cancel_reason" value="Teslimat Alanı Dışında"> Teslimat Alanı Dışında</label><br><br>
             <button onclick="submitSellerCancel()" class="btn-danger">İptali Onayla ve Kaydet</button>
             <button onclick="closeModal('cancel-reason-modal')" style="background:#6c757d; margin-top:5px;">Vazgeç</button>
         </div>
@@ -309,7 +309,6 @@
         let currentSellerOrderFilter = 'aktif';
         let currentAdminStoreFilter = { storeId: null, storeName: '', type: 'aktif' };
 
-        // 12 Haneli Benzersiz Sipariş Numarası Üretici
         function generateOrderNumber() {
             const chars = '0123456789';
             let num = '';
@@ -361,6 +360,7 @@
                 } else if (role === 'seller') {
                     showScreen('seller-screen');
                     await fetchCurrentStore();
+                    loadSellerProducts();
                     updateSellerOrderBadge();
                 } else {
                     document.getElementById('cust-name-disp').innerText = currentUser.user_metadata?.full_name || currentUser.email;
@@ -371,6 +371,78 @@
                 alert('Hata: ' + err.message);
             }
         }
+
+        // SATICI ÜRÜN İŞLEMLERİ (FİRMAYA ÖZEL FİLTRELEME)
+        document.getElementById('add-product-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const category = document.getElementById('prod-category').value;
+            const title = document.getElementById('prod-title').value;
+            const price = parseFloat(document.getElementById('prod-price').value);
+            const origin = document.getElementById('prod-origin').value;
+
+            if (!currentStoreId) {
+                await fetchCurrentStore();
+            }
+
+            const { error } = await supabase.from('products').insert([{
+                store_id: currentStoreId,
+                category: category,
+                title: title,
+                price: price,
+                origin: origin
+            }]);
+
+            if (error) {
+                alert('Ürün eklenirken hata: ' + error.message);
+            } else {
+                alert('Ürün başarıyla eklendi!');
+                document.getElementById('add-product-form').reset();
+                loadSellerProducts();
+            }
+        });
+
+        window.loadSellerProducts = async () => {
+            if (!currentStoreId) await fetchCurrentStore();
+            const list = document.getElementById('seller-products-list');
+            list.innerHTML = 'Ürünler getiriliyor...';
+
+            let query = supabase.from('products').select('*');
+            if (currentStoreId) {
+                query = query.eq('store_id', currentStoreId);
+            }
+
+            const { data: prods, error } = await query;
+            list.innerHTML = '';
+
+            if (error) {
+                list.innerHTML = `<p style="color:red;">Hata: ${error.message}</p>`;
+                return;
+            }
+
+            if (prods && prods.length > 0) {
+                prods.forEach(p => {
+                    list.innerHTML += `
+                        <div class="prod-item">
+                            <div>
+                                <b>[${p.category || 'Genel'}] ${p.title}</b> <br>
+                                <small>Fiyat: ${p.price} TL ${p.origin ? '| Menşei: ' + p.origin : ''}</small>
+                            </div>
+                            <button class="btn-danger" style="width:auto; padding:5px 10px;" onclick="deleteSellerProduct('${p.id}')">Sil</button>
+                        </div>
+                    `;
+                });
+            } else {
+                list.innerHTML = '<p>Kayıtlı ürününüz bulunmuyor.</p>';
+            }
+        };
+
+        window.deleteSellerProduct = async (prodId) => {
+            if (confirm('Bu ürünü silmek istediğinize emin misiniz?')) {
+                const { error } = await supabase.from('products').delete().eq('id', prodId);
+                if (error) alert('Silme hatası: ' + error.message);
+                else loadSellerProducts();
+            }
+        };
 
         // SATICI BİLDİRİM ROZETİ VE SİPARİŞ LİSTELEME
         async function updateSellerOrderBadge() {
@@ -472,7 +544,7 @@
 
             const { error } = await supabase.from('orders').update({
                 status: 'iptal',
-                cancelled_by: `Satıcı İptali (Sebep: ${reason})`
+                cancelled_by: `Satıcı İptali (${reason})`
             }).eq('id', orderId);
 
             if (error) alert('İptal hatası: ' + error.message);
@@ -493,7 +565,6 @@
             const lat = document.getElementById('st-lat').value;
             const lng = document.getElementById('st-lng').value;
 
-            // Supabase şemasına uyumlu güvenli ekleme
             const insertObj = { store_name, phone, latitude: lat, longitude: lng };
             if (email) insertObj.email = email;
             if (address) insertObj.address = address;
@@ -578,11 +649,6 @@
         };
 
         window.openDeleteStoreModal = (id) => {
-            document.getElementById('del-store-id').value = id;
-            document.getElementById('delete-store-modal').classList.remove('hidden');
-        };
-
-        window.confirmDeleteStore = async () => {
             const id = document.getElementById('del-store-id').value;
             const { error } = await supabase.from('stores').delete().eq('id', id);
 
@@ -766,7 +832,7 @@
             document.getElementById('shop-title').innerText = storeName + ' - Ürünler';
             document.getElementById('shop-modal').classList.remove('hidden');
 
-            const { data: prods } = await supabase.from('products').select('*');
+            const { data: prods } = await supabase.from('products').select('*').eq('store_id', storeId);
             const list = document.getElementById('shop-products-list');
             list.innerHTML = '';
 
@@ -784,7 +850,7 @@
                     `;
                 });
             } else {
-                list.innerHTML = '<p>Ürün yok.</p>';
+                list.innerHTML = '<p>Bu markete ait henüz eklenmiş ürün bulunmuyor.</p>';
             }
         };
 
