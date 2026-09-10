@@ -372,7 +372,7 @@
             }
         }
 
-        // SATICI ÜRÜN İŞLEMLERİ (FİRMAYA ÖZEL FİLTRELEME)
+        // SATICI ÜRÜN İŞLEMLERİ
         document.getElementById('add-product-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const category = document.getElementById('prod-category').value;
@@ -648,7 +648,13 @@
             }
         };
 
+        // DÜZELTİLEN MARKET SİLME FONKSİYONLARI
         window.openDeleteStoreModal = (id) => {
+            document.getElementById('del-store-id').value = id;
+            document.getElementById('delete-store-modal').classList.remove('hidden');
+        };
+
+        window.confirmDeleteStore = async () => {
             const id = document.getElementById('del-store-id').value;
             const { error } = await supabase.from('stores').delete().eq('id', id);
 
