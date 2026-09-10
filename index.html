@@ -11,7 +11,6 @@
         input, select, textarea, button { width: 100%; padding: 12px; margin: 6px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
         button { background: #28a745; color: white; border: none; font-weight: bold; cursor: pointer; }
         button:hover { opacity: 0.9; }
-        .btn-google { background: #4285F4; color: white; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: bold; }
         .btn-danger { background: #dc3545; color: white; }
         .btn-warning { background: #ffc107; color: #000; }
         .btn-info { background: #17a2b8; color: white; }
@@ -20,23 +19,27 @@
         .tab-btn { flex: 1; background: #e9ecef; color: #495057; border: 1px solid #ced4da; cursor: pointer; padding: 10px; }
         .tab-btn.active { background: #007bff; color: white; border-color: #007bff; }
         .hidden { display: none !important; }
-        .badge { background: #ffc107; color: #000; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
         .badge-count { background: #dc3545; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-left: 5px; }
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .modal-top { z-index: 2000 !important; }
-        .modal-content { background: white; padding: 20px; border-radius: 10px; width: 95%; max-width: 600px; max-height: 85vh; overflow-y: auto; }
+        .modal-content { background: white; padding: 20px; border-radius: 10px; width: 95%; max-width: 650px; max-height: 85vh; overflow-y: auto; }
         .prod-item, .store-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 10px 0; }
         .qty-btn { width: 32px; height: 32px; padding: 0; margin: 0 4px; display: inline-block; text-align: center; line-height: 32px; border-radius: 4px; }
-        .action-btns { display: flex; gap: 5px; flex-wrap: wrap; }
-        .action-btns button { width: auto; padding: 6px 10px; font-size: 12px; }
         .order-card { border: 1px solid #ddd; padding: 12px; margin-bottom: 10px; border-radius: 6px; background: #fff; }
         .order-card.new-order { border-left: 5px solid #ffc107; }
         .order-card.preparing { border-left: 5px solid #17a2b8; }
         .order-card.completed { border-left: 5px solid #28a745; background: #f8fff9; }
         .order-card.cancelled { background: #fff5f5; border-color: #f5c6cb; border-left: 5px solid #dc3545; }
-        .filter-box { display: flex; gap: 10px; margin-bottom: 12px; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 6px 10px; margin: 4px 0; border-radius: 4px; }
-        .timer-badge { background: #e0f7fa; color: #006064; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 13px; }
+        
+        /* Toplama Masası Özel Stilleri */
+        .picking-item { border: 1px solid #e9ecef; border-radius: 8px; padding: 12px; margin-bottom: 10px; background: #fff; }
+        .picking-item.collected { background: #e8f5e9; border-color: #a5d6a7; }
+        .picking-item.cancelled-item { background: #ffebee; border-color: #ef9a9a; opacity: 0.7; }
+        .action-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+        .action-row button { width: auto; padding: 6px 12px; font-size: 12px; }
+        .qty-picker-box { display: flex; align-items: center; gap: 15px; justify-content: center; margin: 20px 0; }
+        .qty-picker-btn { width: 45px; height: 45px; font-size: 22px; font-weight: bold; border-radius: 50%; padding: 0; }
+        .receipt-box { border: 2px dashed #28a745; padding: 15px; background: #f9fff9; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -162,16 +165,72 @@
         </div>
     </div>
 
-    <!-- SATICI SİPARİŞ TAKİBİ VE SÜRE ÖLÇER MODALI -->
+    <!-- SATICI SİPARİŞ LİSTESİ MODALI -->
     <div id="orders-modal" class="modal hidden">
         <div class="modal-content" style="max-width: 700px;">
-            <h3>Satıcı Sipariş Yönetimi (Trendyol Modeli)</h3>
+            <h3>Satıcı Sipariş Yönetimi</h3>
             <div class="tab-group">
                 <button class="tab-btn active" id="tab-active-orders" onclick="switchSellerOrdersTab('aktif')">Aktif Siparişler</button>
                 <button class="tab-btn" id="tab-cancelled-orders" onclick="switchSellerOrdersTab('iptal')">İptal Edilenler</button>
             </div>
             <div id="orders-list">Siparişler yükleniyor...</div>
             <button onclick="closeModal('orders-modal')" class="btn-danger" style="margin-top:10px;">Kapat</button>
+        </div>
+    </div>
+
+    <!-- TOPLAMA MENÜSÜ MODALI (PICKING POPUP) -->
+    <div id="picking-modal" class="modal modal-top hidden">
+        <div class="modal-content">
+            <h3 id="picking-title">Sipariş Toplama Masası</h3>
+            <div id="picking-timer" style="background:#e0f7fa; color:#006064; padding:8px; border-radius:5px; font-weight:bold; margin-bottom:10px;">⏱️ Başlama Zamanı: --:--</div>
+            
+            <div id="picking-items-list"></div>
+
+            <hr>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <b>Güncellenmiş Toplam: <span id="picking-total-price">0</span> TL</b>
+            </div>
+            
+            <button onclick="finishPicking()" style="background:#28a745; font-size:16px;">Siparişi Tamamla ve Fiş Oluştur 📄</button>
+            <button onclick="closeModal('picking-modal')" class="btn-danger" style="margin-top:5px;">Toplama Ekranını Kapat</button>
+        </div>
+    </div>
+
+    <!-- ADET / MİKTAR SEÇİM MODALI (+ / -) -->
+    <div id="qty-modal" class="modal modal-top hidden">
+        <div class="modal-content" style="max-width:350px; text-align:center;">
+            <h4 id="qty-modal-title">Ürün Toplama Adedi</h4>
+            <div class="qty-picker-box">
+                <button class="qty-picker-btn btn-danger" onclick="adjustQty(-1)">-</button>
+                <span id="selected-qty-val" style="font-size:26px; font-weight:bold;">1</span>
+                <button class="qty-picker-btn btn-primary" onclick="adjustQty(1)">+</button>
+            </div>
+            <small id="qty-max-hint" style="color:#666;"></small>
+            <button onclick="confirmQtyCollection()" style="background:#28a745; margin-top:15px;">Adedi Onayla & Topla</button>
+            <button onclick="closeModal('qty-modal')" style="background:#6c757d; margin-top:5px;">Vazgeç</button>
+        </div>
+    </div>
+
+    <!-- MUADİL ÜRÜN SEÇİM MODALI -->
+    <div id="substitute-modal" class="modal modal-top hidden">
+        <div class="modal-content">
+            <h3>Muadil / Alternatif Ürün Seç</h3>
+            <p><small>Mevcut stokta olmayan ürün yerine mağazanızdan muadil seçin:</small></p>
+            <div id="substitute-products-list">Ürünler yükleniyor...</div>
+            <button onclick="closeModal('substitute-modal')" class="btn-danger" style="margin-top:10px;">Vazgeç</button>
+        </div>
+    </div>
+
+    <!-- SİPARİŞ FİŞİ VE BİLDİRİM MODALI -->
+    <div id="receipt-modal" class="modal modal-top hidden">
+        <div class="modal-content">
+            <div class="receipt-box">
+                <h3 style="text-align:center; color:#28a745; margin-top:0;">✅ Sipariş Başarıyla Toplandı!</h3>
+                <p style="text-align:center;"><small>Müşteriye "Siparişiniz Toplandı" bildirimi gönderildi.</small></p>
+                <hr>
+                <div id="receipt-details"></div>
+            </div>
+            <button onclick="closeModal('receipt-modal')" class="btn-primary" style="margin-top:15px;">Tamam</button>
         </div>
     </div>
 
@@ -241,13 +300,20 @@
         import { supabase } from './js/supabase.js';
 
         let currentUser = null;
-        let userRole = 'guest'; // 'guest', 'customer', 'seller', 'admin'
+        let userRole = 'guest';
         let currentStoreId = null;
         let activeShopStoreId = null;
         let cart = {};
         let currentSellerOrderFilter = 'aktif';
 
-        // OTURUM KONTROLÜ (Sayfa Yenilendiğinde/Tekrar Açıldığında Çıkış Yapmaz)
+        // Toplama Masası Değişkenleri
+        let activePickingOrder = null;
+        let activePickingItems = [];
+        let currentPickingIndex = null;
+        let tempCollectQty = 0;
+        let maxAllowedQty = 0;
+
+        // OTURUM KONTROLÜ
         window.addEventListener('load', async () => {
             loadNearbyStores();
             const { data: { session } } = await supabase.auth.getSession();
@@ -315,7 +381,6 @@
                 let { data, error } = await supabase.auth.signInWithPassword({ email, password });
                 
                 if (error) {
-                    // Kayıt Olma Denemesi
                     const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
                         email, password, options: { data: { role: role } }
                     });
@@ -339,7 +404,7 @@
             updateUIForUser();
         };
 
-        // TRENDYOL SİPARİŞ YÖNETİMİ & KABUL ETME & TOPLAMA SÜRESİ
+        // SATICI SİPARİŞ LİSTESİ VE KABUL EKRANI
         window.openOrdersModal = () => {
             document.getElementById('orders-modal').classList.remove('hidden');
             switchSellerOrdersTab('aktif');
@@ -377,48 +442,31 @@
             if (orders && orders.length > 0) {
                 orders.forEach(o => {
                     const status = o.status || 'yeni';
-                    let itemsParsed = [];
-                    try { itemsParsed = JSON.parse(o.items_json || '[]'); } catch(e){}
-
                     let cardClass = 'order-card ';
                     if (status === 'yeni') cardClass += 'new-order';
-                    else if (status === 'hazırlanıyor') cardClass += 'preparing';
+                    else if (status === 'toplanıyor' || status === 'hazırlanıyor') cardClass += 'preparing';
                     else if (status === 'tamamlandı') cardClass += 'completed';
                     else if (status === 'iptal') cardClass += 'cancelled';
 
                     let contentHtml = '';
 
-                    // YENİ GELEN SİPARİŞ: Ürünler gizli, Onayla Butonu Var
+                    // YENİ GELEN SİPARİŞ: Ürünler gizli, Sadece Siparişi Kabul Et Butonu var
                     if (status === 'yeni') {
                         contentHtml = `
-                            <p style="color:#d9534f; font-weight:bold;">⚠️ Yeni Sipariş Düştü! İçeriği görmek için onaylayın.</p>
-                            <button onclick="acceptOrder('${o.id}')" style="background:#28a745; font-weight:bold;">Siparişi Onayla ve Hazırla ⏱️</button>
+                            <p style="color:#d9534f; font-weight:bold;">⚠️ Yeni Sipariş! İçerik toplama ekranında görünecektir.</p>
+                            <button onclick="acceptAndStartPicking('${o.id}')" style="background:#28a745; font-weight:bold;">Siparişi Kabul Et ve Toplamaya Başla ⏱️</button>
                         `;
-                    } else if (status === 'hazırlanıyor') {
-                        // HAZIRLANIYOR SÜRECİ: Ürün çıkarma aktif, Süre sayıyor
-                        const startTime = new Date(o.accepted_at).toLocaleTimeString('tr-TR');
+                    } else if (status === 'toplanıyor' || status === 'hazırlanıyor') {
                         contentHtml = `
-                            <div style="margin: 10px 0;">
-                                <span class="timer-badge">⏱️ Başlama Saati: ${startTime} (Hazırlanıyor...)</span>
-                            </div>
-                            <h4>Sipariş Kalemleri:</h4>
-                            <div>
-                                ${itemsParsed.map((item, index) => `
-                                    <div class="item-row">
-                                        <span><b>${item.title}</b> - ${item.qty} Adet (${item.price * item.qty} TL)</span>
-                                        <button class="btn-danger" style="width:auto; padding:3px 8px; font-size:11px;" onclick="removeItemFromOrder('${o.id}', ${index})">Stok Yok (Çıkar)</button>
-                                    </div>
-                                `).join('')}
-                            </div>
-                            <button onclick="completeOrder('${o.id}', '${o.accepted_at}')" style="background:#007bff; margin-top:10px;">Hazırlandı / Kuryeye Teslim Et ✅</button>
+                            <button onclick="openPickingModal('${o.id}')" class="btn-info">Toplama Masasına Git 🛒</button>
                         `;
                     } else if (status === 'tamamlandı') {
                         contentHtml = `
-                            <p><b>Toplanma Süresi:</b> <span class="timer-badge">${o.total_prep_time || 'Belirtilmedi'}</span></p>
-                            <p><b>Teslim Edilen Ürünler:</b> ${o.items_summary}</p>
+                            <p style="color:green; font-weight:bold;">✅ Toplandı (Süre: ${o.total_prep_time || 'Belirtilmedi'})</p>
+                            <p><b>Teslim Edilenler:</b> ${o.items_summary}</p>
                         `;
                     } else {
-                        contentHtml = `<p><b>İptal Sebebi:</b> ${o.cancelled_by}</p>`;
+                        contentHtml = `<p><b>İptal Sebebi:</b> ${o.cancelled_by || 'Satıcı İptali'}</p>`;
                     }
 
                     list.innerHTML += `
@@ -428,10 +476,9 @@
                                 <small>${new Date(o.created_at).toLocaleString('tr-TR')}</small>
                             </div>
                             <p><b>Müşteri:</b> ${o.customer_name} | <b>Tel:</b> ${o.customer_phone}</p>
-                            <p><b>Adres:</b> ${o.customer_address}</p>
-                            <p><b>Toplam Tutar:</b> <b>${o.subtotal} TL</b></p>
+                            <p><b>Tutar:</b> <b>${o.subtotal} TL</b></p>
                             ${contentHtml}
-                            ${status !== 'iptal' && status !== 'tamamlandı' ? `<button class="btn-danger" onclick="openCancelReasonModal('${o.id}')" style="margin-top:8px;">Siparişi İptal Et</button>` : ''}
+                            ${status !== 'iptal' && status !== 'tamamlandı' ? `<button class="btn-danger" onclick="openCancelReasonModal('${o.id}')" style="margin-top:8px;">Siparişi Tamamen İptal Et</button>` : ''}
                         </div>
                     `;
                 });
@@ -440,65 +487,242 @@
             }
         }
 
-        // SİPARİŞİ KABUL ETME (Zamanı Başlatır)
-        window.acceptOrder = async (orderId) => {
+        // SİPARİŞİ KABUL ET VE TOPLAMA MASASINI AÇ
+        window.acceptAndStartPicking = async (orderId) => {
             const now = new Date().toISOString();
             const { error } = await supabase.from('orders').update({
-                status: 'hazırlanıyor',
+                status: 'toplanıyor',
                 accepted_at: now
             }).eq('id', orderId);
 
             if (error) alert('Hata: ' + error.message);
-            else loadSellerOrders();
+            else openPickingModal(orderId);
         };
 
-        // SİPARİŞİ TAMAMLAMA (Süreyi Hesaplar)
-        window.completeOrder = async (orderId, acceptedAtStr) => {
-            const acceptedAt = new Date(acceptedAtStr);
+        // TOPLAMA MENÜSÜ AÇILIŞI
+        window.openPickingModal = async (orderId) => {
+            const { data: order } = await supabase.from('orders').select('*').eq('id', orderId).single();
+            if (!order) return;
+
+            activePickingOrder = order;
+            try {
+                activePickingItems = JSON.parse(order.items_json || '[]');
+            } catch(e) { activePickingItems = []; }
+
+            activePickingItems.forEach(item => {
+                if (item.collected_qty === undefined) item.collected_qty = 0;
+                if (!item.status) item.status = 'bekliyor';
+            });
+
+            document.getElementById('picking-title').innerText = `Sipariş No: ${order.order_number} - Toplama Masası`;
+            document.getElementById('picking-timer').innerText = `⏱️ Başlama Zamanı: ${new Date(order.accepted_at || order.created_at).toLocaleTimeString('tr-TR')}`;
+            
+            renderPickingItems();
+            document.getElementById('picking-modal').classList.remove('hidden');
+        };
+
+        // TOPLAMA EKRANINI BİREBİR SEÇİM DETAYLARIYLA RENDER ETME
+        function renderPickingItems() {
+            const list = document.getElementById('picking-items-list');
+            list.innerHTML = '';
+            let currentSubtotal = 50; // Getirme Ücreti
+
+            activePickingItems.forEach((item, index) => {
+                const totalTarget = item.qty;
+                const collected = item.collected_qty || 0;
+                let statusBadge = '';
+                let itemClass = 'picking-item';
+
+                if (item.status === 'iptal') {
+                    statusBadge = '<span style="color:red; font-weight:bold;">[İPTAL EDİLDİ]</span>';
+                    itemClass += ' cancelled-item';
+                } else if (collected >= totalTarget) {
+                    statusBadge = '<span style="color:green; font-weight:bold;">[TAMAMI TOPLANDI ✅]</span>';
+                    itemClass += ' collected';
+                    currentSubtotal += item.price * collected;
+                } else if (collected > 0) {
+                    statusBadge = `<span style="color:orange; font-weight:bold;">[KISMİ TOPLANDI (${collected}/${totalTarget})]</span>`;
+                    currentSubtotal += item.price * collected;
+                } else {
+                    statusBadge = '<span style="color:gray;">[TOPLANMADI]</span>';
+                }
+
+                list.innerHTML += `
+                    <div class="${itemClass}">
+                        <div>
+                            <b>${item.title}</b> ${statusBadge} <br>
+                            <small>Sipariş Edilen: <b>${totalTarget} Adet/Kg</b> | Birim Fiyat: ${item.price} TL</small> <br>
+                            <small>Toplanan: <b>${collected} Adet/Kg</b></small>
+                        </div>
+                        <div class="action-row">
+                            ${item.status !== 'iptal' && collected < totalTarget ? `
+                                <button class="btn-primary" onclick="openQtyModal(${index})"> Topla / Adet Seç (+/-)</button>
+                            ` : ''}
+                            ${item.status !== 'iptal' ? `
+                                <button class="btn-danger" onclick="cancelRemainingItem(${index})">❌ İptal Et</button>
+                                <button class="btn-warning" onclick="openSubstituteModal(${index})">🔄 Değiştir (Muadil)</button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('picking-total-price').innerText = currentSubtotal.toFixed(2);
+        }
+
+        // ADET SEÇİM POPUP SÜRECİ (+ / -)
+        window.openQtyModal = (index) => {
+            currentPickingIndex = index;
+            const item = activePickingItems[index];
+            maxAllowedQty = item.qty - item.collected_qty;
+            tempCollectQty = maxAllowedQty;
+
+            document.getElementById('qty-modal-title').innerText = `${item.title} Toplama`;
+            document.getElementById('qty-max-hint').innerText = `Kalan toplanabilir miktar: ${maxAllowedQty}`;
+            updateQtyDisplay();
+            document.getElementById('qty-modal').classList.remove('hidden');
+        };
+
+        window.adjustQty = (delta) => {
+            tempCollectQty += delta;
+            if (tempCollectQty < 0) tempCollectQty = 0;
+            if (tempCollectQty > maxAllowedQty) tempCollectQty = maxAllowedQty;
+            updateQtyDisplay();
+        };
+
+        function updateQtyDisplay() {
+            document.getElementById('selected-qty-val').innerText = tempCollectQty;
+        }
+
+        window.confirmQtyCollection = () => {
+            if (currentPickingIndex === null) return;
+            const item = activePickingItems[currentPickingIndex];
+            
+            item.collected_qty = (item.collected_qty || 0) + tempCollectQty;
+            if (item.collected_qty >= item.qty) {
+                item.status = 'toplandı';
+            } else if (item.collected_qty > 0) {
+                item.status = 'kısmi';
+            }
+
+            closeModal('qty-modal');
+            renderPickingItems();
+        };
+
+        // KALAN VEYA TÜM ADETİ İPTAL ETME
+        window.cancelRemainingItem = (index) => {
+            const item = activePickingItems[index];
+            const remaining = item.qty - (item.collected_qty || 0);
+
+            if (item.collected_qty > 0) {
+                if (confirm(`Bu üründen ${item.collected_qty} adet toplandı. Kalan ${remaining} adet iptal edilsin mi?`)) {
+                    item.qty = item.collected_qty;
+                    item.status = 'toplandı';
+                    renderPickingItems();
+                }
+            } else {
+                if (confirm(`${item.title} ürününün tamamı iptal edilsin mi?`)) {
+                    item.status = 'iptal';
+                    item.collected_qty = 0;
+                    renderPickingItems();
+                }
+            }
+        };
+
+        // MUADİL ÜRÜN İLE DEĞİŞTİRME
+        window.openSubstituteModal = async (index) => {
+            currentPickingIndex = index;
+            document.getElementById('substitute-modal').classList.remove('hidden');
+            const list = document.getElementById('substitute-products-list');
+            list.innerHTML = 'Mağaza ürünleri çekiliyor...';
+
+            const { data: prods } = await supabase.from('products').select('*').eq('store_id', activePickingOrder.store_id);
+            list.innerHTML = '';
+
+            if (prods && prods.length > 0) {
+                prods.forEach(p => {
+                    list.innerHTML += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:8px 0;">
+                            <div><b>${p.title}</b> <br><small>${p.price} TL</small></div>
+                            <button class="btn-warning" style="width:auto;" onclick="selectSubstitute('${p.title}', ${p.price})">Seç ve Değiştir</button>
+                        </div>
+                    `;
+                });
+            } else {
+                list.innerHTML = '<p>Başka ürün bulunamadı.</p>';
+            }
+        };
+
+        window.selectSubstitute = (newTitle, newPrice) => {
+            if (currentPickingIndex === null) return;
+            const item = activePickingItems[currentPickingIndex];
+            
+            alert(`${item.title} ürünü -> ${newTitle} (${newPrice} TL) ile değiştirildi.`);
+            item.title = `[DEĞİŞTİRİLDİ] ${newTitle}`;
+            item.price = newPrice;
+            item.collected_qty = item.qty;
+            item.status = 'toplandı';
+
+            closeModal('substitute-modal');
+            renderPickingItems();
+        };
+
+        // TOPLAMAYI BİTİRME, FİŞ VE BİLDİRİM OLUŞTURMA
+        window.finishPicking = async () => {
+            const uncollected = activePickingItems.filter(i => i.status === 'bekliyor');
+            if (uncollected.length > 0) {
+                if (!confirm(`Siparişte henüz işlem yapılmamış ${uncollected.length} ürün var. Tamamlamak istediğinize emin misiniz?`)) return;
+            }
+
+            const acceptedAt = new Date(activePickingOrder.accepted_at || activePickingOrder.created_at);
             const now = new Date();
             const diffMs = now - acceptedAt;
             const diffMins = Math.floor(diffMs / 60000);
             const diffSecs = Math.floor((diffMs % 60000) / 1000);
             const prepTimeStr = `${diffMins} Dakika ${diffSecs} Saniye`;
 
-            const { error } = await supabase.from('orders').update({
-                status: 'tamamlandı',
-                total_prep_time: prepTimeStr
-            }).eq('id', orderId);
-
-            if (error) alert('Hata: ' + error.message);
-            else {
-                alert(`Sipariş Hazırlandı!\nToplam Toplanma Süresi: ${prepTimeStr}`);
-                loadSellerOrders();
-            }
-        };
-
-        // İÇERİDEN ÜRÜN ÇIKARMA
-        window.removeItemFromOrder = async (orderId, itemIndex) => {
-            const { data: order } = await supabase.from('orders').select('*').eq('id', orderId).single();
-            if (!order) return;
-
-            let items = JSON.parse(order.items_json || '[]');
-            const removedItem = items.splice(itemIndex, 1)[0];
-
-            let newSubtotal = 50; // 50 TL sabit getirme ücreti
+            let finalSubtotal = 50;
             let summaryArray = [];
-            items.forEach(i => {
-                newSubtotal += i.price * i.qty;
-                summaryArray.push(`${i.title} (${i.qty} Adet)`);
+
+            activePickingItems.forEach(i => {
+                if (i.status !== 'iptal' && i.collected_qty > 0) {
+                    finalSubtotal += i.price * i.collected_qty;
+                    summaryArray.push(`${i.title} (${i.collected_qty} Adet)`);
+                }
             });
 
             const { error } = await supabase.from('orders').update({
-                items_json: JSON.stringify(items),
+                status: 'tamamlandı',
+                items_json: JSON.stringify(activePickingItems),
                 items_summary: summaryArray.join(', '),
-                subtotal: newSubtotal
-            }).eq('id', orderId);
+                subtotal: finalSubtotal,
+                total_prep_time: prepTimeStr
+            }).eq('id', activePickingOrder.id);
 
-            if (error) alert('Ürün çıkarma hatası: ' + error.message);
-            else {
-                alert(`${removedItem.title} siparişten çıkarıldı. Toplam tutar güncellendi.`);
-                loadSellerOrders();
-            }
+            if (error) return alert('Hata: ' + error.message);
+
+            let receiptHtml = `
+                <p><b>Sipariş No:</b> ${activePickingOrder.order_number}</p>
+                <p><b>Müşteri:</b> ${activePickingOrder.customer_name}</p>
+                <p><b>Toplanma Süresi:</b> ${prepTimeStr}</p>
+                <hr>
+                <h4>Toplanan Ürün Detayı:</h4>
+                <ul>
+                    ${activePickingItems.map(i => `
+                        <li>
+                            ${i.title} - ${i.collected_qty} Adet x ${i.price} TL = <b>${(i.collected_qty * i.price).toFixed(2)} TL</b>
+                            ${i.status === 'iptal' ? '<span style="color:red;">(İptal)</span>' : ''}
+                        </li>
+                    `).join('')}
+                </ul>
+                <p><b>Hizmet/Getirme Bedeli:</b> 50.00 TL</p>
+                <h3><b>Genel Toplam Tutar:</b> ${finalSubtotal.toFixed(2)} TL</h3>
+            `;
+
+            document.getElementById('receipt-details').innerHTML = receiptHtml;
+            closeModal('picking-modal');
+            document.getElementById('receipt-modal').classList.remove('hidden');
+            loadSellerOrders();
         };
 
         // İPTAL İŞLEMLERİ
@@ -524,7 +748,7 @@
             }
         };
 
-        // MÜŞTERİ ALIŞVERİŞ VE MİSAFİR MODU KONTROLÜ
+        // MÜŞTERİ ALIŞVERİŞ VE SİPARİŞ VERME
         async function loadNearbyStores() {
             const { data: stores } = await supabase.from('stores').select('*');
             const div = document.getElementById('nearby-stores');
@@ -596,7 +820,6 @@
         }
 
         window.placeOrder = async () => {
-            // MİSAFİR KONTROLÜ: Sipariş anında üyeliğe yönlendirir
             if (!currentUser) {
                 alert('Sipariş verebilmek için lütfen önce giriş yapın veya kayıt olun!');
                 openAuthModal();
@@ -612,7 +835,7 @@
             let itemsArray = [], itemsJson = [], subtotal = 0;
             for (let id in cart) {
                 itemsArray.push(`${cart[id].title} (${cart[id].qty} Adet)`);
-                itemsJson.push({ title: cart[id].title, price: cart[id].price, qty: cart[id].qty });
+                itemsJson.push({ title: cart[id].title, price: cart[id].price, qty: cart[id].qty, collected_qty: 0, status: 'bekliyor' });
                 subtotal += cart[id].price * cart[id].qty;
             }
             if (itemsArray.length === 0) return alert('Sepetiniz boş!');
@@ -810,3 +1033,4 @@
     </script>
 </body>
 </html>
+         
